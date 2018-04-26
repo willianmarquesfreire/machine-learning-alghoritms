@@ -1,0 +1,7 @@
+Para cada atributo,
+    Para cada valor deste atributo, faça conforme a seguir:
+        conte quantas vezes cada classe aparece
+        procure o classe mais frequente
+        atribua esta classe a este valor de atributo
+    calcule a taxa de erro destas regras
+escolha as regras com a menor taxa de erro.
