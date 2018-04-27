@@ -22,14 +22,14 @@ let matriz = [
     ['adulto', 'miopia', 'sim', 'normal', 'dura'],
     ['adulto', 'miopia', 'sim', 'normal', 'gelatinosa'],
     ['adulto', 'miopia', 'nao', 'reduzida', 'nenhuma'],
-    ['adulto', 'hipermetropia', 'ksim', 'normal', 'gelatinosa'],
+    ['adulto', 'hipermetropia', 'sim', 'normal', 'gelatinosa'],
     ['adulto', 'hipermetropia', 'nao', 'normal', 'gelatinosa'],
 ];
 
 class UmR {
     constructor(matriz) {
-        this.dados = [[]];
         this.dados = matriz;
+        this.modelo = "";
     }
     indiceDoAtributo(atributo) {
         return this.dados[0].indexOf(atributo)
@@ -47,43 +47,100 @@ class UmR {
         delete valores[0];
         return valores;
     }
+    maiorCoberturaClasse(objCoberturaClasse) {
+        let maior = { classe: '', qtd: 0, erros: 0, qtdExemplos: 0};
+        Object.keys(objCoberturaClasse).forEach(key => {
+            maior.qtdExemplos += objCoberturaClasse[key];
+            if (objCoberturaClasse[key] > maior.qtd) {
+                maior.classe = key;
+                maior.qtd = objCoberturaClasse[key]
+            }
+        })
+        maior.erros = maior.qtdExemplos - maior.qtd;
+        return maior;
+    }
     coberturaClassePorAtributo(atributo) {
         let indiceDoAtributo = this.indiceDoAtributo(atributo)
         let cobertura = {}
         this.dados.forEach((dado, index) => {
             if (index === 0) return;
-            cobertura[dado[indiceDoAtributo]] = {};
+            cobertura[dado[indiceDoAtributo]] = cobertura[dado[indiceDoAtributo]] || {};
             cobertura[dado[indiceDoAtributo]][this.dados[index][this.qtdCampos() - 1]] =
                 cobertura[dado[indiceDoAtributo]][this.dados[index][this.qtdCampos() - 1]]
                     ? cobertura[dado[indiceDoAtributo]][this.dados[index][this.qtdCampos() - 1]] + 1
                     : 1;
-            console.log(atributo, dado[indiceDoAtributo], this.dados[index][this.qtdCampos() - 1])
         })
-        console.log(cobertura)
         return cobertura
     }
-    maiorCoberturaClasseParaAtributo(atributo) {
-        let indiceDoAtributo = this.indiceDoAtributo(atributo)
-        let coberturaClassePorAtributo = this.coberturaClassePorAtributo(atributo);
-    }
     regras() {
-        return this.dados[0].map(atributo => {
-            this.maiorCoberturaClasseParaAtributo(atributo)
-            return {
+        return this.dados[0].map((atributo, index) => {
+            if (index === this.qtdCampos() - 1) return; 
+            let indiceDoAtributo = this.indiceDoAtributo(atributo)
+            let coberturaClassePorAtributo = this.coberturaClassePorAtributo(atributo);
+            let toReturn = {
                 atributo: atributo,
-                regras: [
-
-                ],
+                regras: Object.keys(coberturaClassePorAtributo)
+                    .map(key => {
+                        let maiorCoberturaClasse = this.maiorCoberturaClasse(coberturaClassePorAtributo[key]);                        
+                        return {
+                            regraStr: `${atributo} == '${key}'`,
+                            valor: key,
+                            classe: maiorCoberturaClasse.classe,
+                            erros: maiorCoberturaClasse.erros,
+                            qtdExemplos: maiorCoberturaClasse.qtdExemplos,
+                            mediaErrosStr: maiorCoberturaClasse.erros + '/' + maiorCoberturaClasse.qtdExemplos,
+                            mediaErros: maiorCoberturaClasse.erros / maiorCoberturaClasse.qtdExemplos
+                        }
+                    }),
                 totalErros: 0
             }
-        })
+
+            toReturn.regras
+                .forEach(regra => {
+                    toReturn.totalErros += regra.erros
+                })
+            
+            toReturn.mediaTotalErrosStr = toReturn.totalErros + '/' + (this.dados.length - 1);
+            toReturn.mediaTotalErros = toReturn.totalErros / (this.dados.length - 1);
+
+            return toReturn;
+        }).filter(value => value)
     }
     treina() {
         let regras = this.regras();
+        let atributoComMenoresErros = regras[0]
+        regras.forEach(regra => {
+            if (regra.mediaTotalErros < atributoComMenoresErros.mediaTotalErros) {
+                atributoComMenoresErros = regra;
+            }
+        });
 
+        let modelo = "if ("
+        atributoComMenoresErros.regras.forEach((regra, index) => {
+            if (index > 0) modelo += " else if ("
+            modelo += `this.${regra.regraStr}) {`
+            modelo += `return  '${regra.classe}'`
+            modelo += "}"
+        })
+        this.modelo = modelo;
+    }
+    prediz(dado) {
+        let atributos = this.dados[0];
+        let predicao = null;
+        let ctx = function(modelo) {
+            atributos.forEach((attr, index) => {
+                this[attr] = dado[index]
+            })
+            this.result = new Function(modelo);
+            predicao = this.result();
+        }
+        new ctx(this.modelo);
+        return predicao;
     }
 }
 
 
 let umR = new UmR(matriz);
 umR.treina();
+console.log(umR.prediz(['adolescente', 'hipermetropia', 'nao', 'normal', 'gelatinosa']))
+console.log(umR.prediz(['adolescente', 'hipermetropia', 'nao', 'reduzida', 'gelatinosa']))
