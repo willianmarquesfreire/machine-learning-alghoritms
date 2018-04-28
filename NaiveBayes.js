@@ -16,14 +16,14 @@ let matriz = [
     ['infantil', 'hipermetropia', 'nao', 'normal', 'gelatinosa'],
     ['infantil', 'hipermetropia', 'sim', 'normal', 'dura'],
     ['adolescente', 'miopia', 'nao', 'reduzida', 'gelatinosa'],
-    ['adolescente', 'miopia', 'nao', 'reduzida', 'nenhuma'],
+    ['adolescente', 'miopia', 'sim', 'reduzida', 'nenhuma'],
     ['adolescente', 'miopia', 'nao', 'normal', 'dura'],
     ['adolescente', 'hipermetropia', 'nao', 'reduzida', 'gelatinosa'],
     ['adolescente', 'hipermetropia', 'sim', 'normal', 'dura'],
     ['adulto', 'miopia', 'nao', 'normal', 'gelatinosa'],
     ['adulto', 'miopia', 'sim', 'normal', 'dura'],
     ['adulto', 'miopia', 'sim', 'normal', 'gelatinosa'],
-    ['adulto', 'miopia', 'nao', 'reduzida', 'nenhuma'],
+    ['adulto', 'hipermetropia', 'nao', 'reduzida', 'nenhuma'],
     ['adulto', 'hipermetropia', 'sim', 'normal', 'gelatinosa'],
     ['adulto', 'hipermetropia', 'nao', 'normal', 'gelatinosa'],
 ];
@@ -34,13 +34,16 @@ class NaiveBayes {
         this.modelo = {}
         this.dados = dados;
         this.laplace = true;
+        this.classes = [];
     }
     treina(laplace) {
-        this.laplace = laplace || true;
         this.dados[0].forEach((attr, index) => {
             this.modelo[attr] = {}
             this.dados.forEach((dado, i) => {
                 if (i === 0) return;
+                if (!this.classes.includes(dado[dado.length - 1])) {
+                    this.classes.push(dado[dado.length - 1])
+                }
                 this.modelo[attr][dado[index]] = this.modelo[attr][dado[index]] || {}
                 this.modelo[attr][dado[index]].qtd = this.modelo[attr][dado[index]].qtd || {}
                 this.modelo[attr][dado[index]]['qtd'].total = this.modelo[attr][dado[index]]['qtd'].total ? this.modelo[attr][dado[index]]['qtd'].total + 1 : 1;
@@ -55,28 +58,51 @@ class NaiveBayes {
                     Object.keys(this.modelo[attr].qtd).forEach(classe => {
                         if (this.modelo[attr][key].qtd) {
                             this.modelo[attr][key].qtd[classe] = this.modelo[attr][key].qtd[classe] || 0;
-                            console.log(attr, key, this.modelo[attr][key].qtd)
                             if (this.modelo[attr][classe] && this.modelo[attr][classe].qtd) {
-                                this.modelo[attr][key]['valor_' + classe] = ((this.modelo[attr][key].qtd[classe] || 0) + (this.laplace ? 1 : 0)) /
-                                    (this.laplace ? this.modelo[attr].qtd[classe] + Object.keys(this.modelo[attr][key].qtd).length - 1 : this.modelo[attr].qtd[classe])
+                                this.modelo[attr][key][classe] = ((this.modelo[attr][key].qtd[classe] || 0) + (this.laplace ? 1 : 0)) /
+                                    (this.laplace ? this.dados.length - 1 + this.classes.length : this.dados.length - 1);
+
+                                this.modelo[attr][key]['str_' + classe] = ((this.modelo[attr][key].qtd[classe] || 0) + (this.laplace ? 1 : 0)) + ' / '
+                                    + (this.laplace ? this.dados.length - 1 + this.classes.length : this.dados.length - 1);
                             } else {
                                 this.modelo[attr][key][classe] = ((this.modelo[attr][key].qtd[classe] || 0) + (this.laplace ? 1 : 0)) /
-                                    (this.laplace ? this.modelo[attr].qtd[classe] + Object.keys(this.modelo[attr][key].qtd).length - 1 : this.modelo[attr].qtd[classe])
+                                    (this.laplace ? this.modelo[attr].qtd[classe] + Object.keys(this.modelo[attr]).length - 1 : this.modelo[attr].qtd[classe]);
+
+                                this.modelo[attr][key]['str_' + classe] = ((this.modelo[attr][key].qtd[classe] || 0) + (this.laplace ? 1 : 0)) + ' / '
+                                    + (this.laplace ? this.modelo[attr].qtd[classe] + Object.keys(this.modelo[attr]).length - 1 : this.modelo[attr].qtd[classe]);
+
                             }
-                            this.modelo[attr][key]['str_' + classe] = ((this.modelo[attr][key].qtd[classe] || 0) + (this.laplace ? 1 : 0)) + ' / '
-                                + (this.laplace ? this.modelo[attr].qtd[classe] + Object.keys(this.modelo[attr][key].qtd).length - 1 : this.modelo[attr].qtd[classe])
                         }
                     })
                 }
             })
         })
-        console.log(this.modelo)
     }
     prediz(dado) {
+        let probabilidades = [];
+        this.classes.forEach(classe => {
+            let probabilidadeClasse = 1;
+            this.dados[0].forEach((attr, i) => {
+                let iclasse = dado[i] || classe;
+                probabilidadeClasse *= this.modelo[attr][iclasse][classe];
+            })
+            probabilidades.push({
+                prob: probabilidadeClasse,
+                classe: classe
+            })
+        })
 
+        let normalizacoes = probabilidades.map((probabilidade, index) => {
+            return {
+                probabilidade: probabilidade.prob / probabilidades.map(prob => prob.prob).reduce((a,b) => a + b),
+                classe: probabilidade.classe
+            }
+        }).sort((a,b) => b.probabilidade - a.probabilidade)
+
+        return normalizacoes[0]
     }
 }
 
 let naiveBayes = new NaiveBayes(matriz);
 naiveBayes.treina();
-naiveBayes.prediz(['infantil', 'hipermetropia', 'nao', 'reduzida']);
+console.log(naiveBayes.prediz(['infantil', 'miopia', 'nao', 'reduzida']))
