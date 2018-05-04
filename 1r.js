@@ -42,7 +42,7 @@ let matriz2 = [
     ['Nublado', 72, 90, 'verdade', 'sim'],
     ['Nublado', 81, 75, 'falso', 'sim'],
     ['Chovendo', 71, 91, 'verdade', 'nao'],
-]
+];
 
 class UmR {
     constructor(matriz) {
