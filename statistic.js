@@ -36,11 +36,9 @@
     valores e seleciona os mais próximos, sendo que a cada seleção, soma o número
     aleatório com o valor selecionado e busca o mais próximo a este valor. Repete
     até o último registro.
-
 */
 
 class Amostra {
-
     constructor(dados, qtd, reposicao) {
         this.dados = dados;
         this.qtd = qtd;
@@ -86,13 +84,13 @@ class Amostra {
         return selected;
     }
     unidadeMonetaria(coluna) {
-        let total = this.dados.reduce((a,b) => a + b.debito, 0);
+        let total = this.dados.reduce((a, b) => a + b.debito, 0);
         let intervalo = total / this.dados.length;
         let select = [];
         this.dados[0].cumulativo = this.dados[0][coluna];
         for (let i = 1; i < this.dados.length; i++) {
             this.dados[i].cumulativo = this.dados[i].debito;
-            this.dados[i].cumulativo += this.dados[i-1].cumulativo;
+            this.dados[i].cumulativo += this.dados[i - 1].cumulativo;
             if (this.dados[i].cumulativo >= intervalo) {
                 select.push(this.dados[i]);
                 intervalo += this.dados[i].cumulativo;
@@ -126,3 +124,49 @@ class Amostra {
 //     { debito: 20, id: 9 }
 // ], 2, false).unidadeMonetaria('debito');
 // console.log(amostra)
+
+/*
+    Medidas de centralidade:
+    Média: somatorio(x) / N
+    Moda: Valor que mais se repete
+    Mediana: Valor do meio - Odena valores em ordem crescente
+        - Se qtd = par, mediana = media(dados[n/2], dados[n/2 + 1])
+        - Se qtd = impar, mediana = dados[(n+1)/2]
+*/
+
+class centralidade {
+    constructor(dados) {
+        this.dados = dados;
+    }
+    media(dados) {
+        this.dados = dados || this.dados;
+        let somatorio = this.dados.reduce((a, b) => a + b, 0);
+        return somatorio / this.dados.length;
+    }
+    mediana(dados) {
+        this.dados = dados || this.dados;
+        this.dados = this.dados.sort((a, b) => a - b)
+        let length = this.dados.length;
+        console.log(Math.floor((length + 1) / 2))
+        if (length % 2 == 0)
+            return this.media([this.dados[Math.floor(length / 2)], this.dados[Math.floor(length / 2 + 1)]])
+        else
+            return this.dados[Math.floor((length + 1) / 2)-1]
+    }
+    moda(dados) {
+        this.dados = dados || this.dados;
+        let count = {};
+        this.dados.forEach(dado => count[dado] = (count[dado] ? count[dado] + 1 : 1))
+        let maior = 0;
+        let valueMaior = 0;
+        Object.keys(count).forEach((c, index) => {
+            if (count[c] > valueMaior) {
+                maior = index;
+                valueMaior = count[c];
+            }
+        })
+        return this.dados[maior];
+    }
+}
+
+// console.log(new centralidade([10, 20, 40, 30, 30, 10000]).mediana())
