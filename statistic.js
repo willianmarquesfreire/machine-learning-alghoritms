@@ -38,7 +38,7 @@
     até o último registro.
 */
 
-class Amostra {
+class Amostragem {
     constructor(dados, qtd, reposicao) {
         this.dados = dados;
         this.qtd = qtd;
@@ -101,8 +101,8 @@ class Amostra {
 }
 
 // Exemplos:
-// let amostra = new Amostra([1,5,3,5,7,4], 2, false).simples();
-// let amostra = new Amostra([
+// let amostra = new Amostragem([1,5,3,5,7,4], 2, false).simples();
+// let amostra = new Amostragem([
 //     { idade: 10, id: 1 },
 //     { idade: 10, id: 2 },
 //     { idade: 10, id: 3 },
@@ -112,8 +112,8 @@ class Amostra {
 //     { idade: 20, id: 8 },
 //     { idade: 20, id: 9 }
 // ], 2, false).estratificada('idade');
-// let amostra = new Amostra([1,5,3,5,7,4], 2, false).sistematica();
-// let amostra = new Amostra([
+// let amostra = new Amostragem([1,5,3,5,7,4], 2, false).sistematica();
+// let amostra = new Amostragem([
 //     { debito: 10, id: 1 },
 //     { debito: 15, id: 2 },
 //     { debito: 18, id: 3 },
@@ -134,7 +134,7 @@ class Amostra {
         - Se qtd = impar, mediana = dados[(n+1)/2]
 */
 
-class centralidade {
+class Centralidade {
     constructor(dados) {
         this.dados = dados;
     }
@@ -147,11 +147,10 @@ class centralidade {
         this.dados = dados || this.dados;
         this.dados = this.dados.sort((a, b) => a - b)
         let length = this.dados.length;
-        console.log(Math.floor((length + 1) / 2))
         if (length % 2 == 0)
             return this.media([this.dados[Math.floor(length / 2)], this.dados[Math.floor(length / 2 + 1)]])
         else
-            return this.dados[Math.floor((length + 1) / 2)-1]
+            return this.dados[Math.floor((length + 1) / 2) - 1]
     }
     moda(dados) {
         this.dados = dados || this.dados;
@@ -168,5 +167,47 @@ class centralidade {
         return this.dados[maior];
     }
 }
+// Exemplos
+// console.log(new Centralidade([10, 20, 40, 30, 30, 10000]).media())
+// console.log(new Centralidade([10, 20, 40, 30, 30, 10000]).mediana())
+// console.log(new Centralidade([10, 20, 40, 30, 30, 10000]).moda())
 
-// console.log(new centralidade([10, 20, 40, 30, 30, 10000]).mediana())
+/*
+    ** Variabilidade **
+    - Variância: 
+        - Amostra: (somatório(xi - media(x)) ^ 2) / n-1
+        - População: (somatório(xi - media(x)) ^ 2) / n
+    - Desvio Padrão: raizQuadrada(variância)
+    - Amplitude: maior - menor
+*/
+
+class Variabilidade {
+
+    constructor(dados, populacao) {
+        this.dados = dados
+        this.populacao = populacao;
+    }
+
+    variancia() {
+        let media = new Centralidade(this.dados).media();
+        let somatorio = 0;
+        this.dados.forEach(dado => {
+            somatorio += Math.pow(dado - media, 2);
+        })
+        return somatorio / (this.populacao ? this.dados.length : this.dados.length - 1);
+    }
+    desvioPadrao() {
+        return Math.sqrt(this.variancia());
+    }
+    amplitude() {
+        this.dados = this.dados.sort((a, b) => a - b);
+        return this.dados[this.dados.length - 1] - this.dados[0];
+    }
+
+}
+
+// Exemplos:
+// let variabilidade = new Variabilidade([40.000,18.000,12.000,250.000,30.000,140.000,300.000,40.000,800.000]);
+// console.log(variabilidade.variancia());
+// console.log(variabilidade.desvioPadrao());
+// console.log(variabilidade.amplitude());
