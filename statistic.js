@@ -13,7 +13,7 @@
             Contínuas: Valores reais
             Discretas: Números inteiros
 
-        Qualitativas - Categóricas
+        Qualitativa - Categóricas
             Nominais: Sem hierarquia
             Ordinais: Com hierarquia
     
@@ -309,7 +309,7 @@ class Probabilidade {
             - Mostra o número de desvios padrões que o valor está acima ou
                 abaixo da média (score z ou valor z)
             - Média Zero
-            - Deviso Padrão 1
+            - Desvio Padrão 1
             - Usa-se a fórmula para calcular a probabilidade dos dados em relação
                 a tabela Z. Z = (amostra - média) / desvioPadrão
 */
@@ -350,10 +350,11 @@ class DistribuicaoBinomial {
 
 class DistribuicaoNormal {
     // sucessoEsperado, média, desvioPadrão
-    constructor(x, u, o) {
+    constructor(x, u, o, lowerTail) {
         this.x = x;
         this.u = u;
         this.o = o;
+        this.lowerTail = lowerTail;
     }
     z() {
         let z = (this.x - this.u) / this.o;
@@ -371,10 +372,16 @@ class DistribuicaoNormal {
     }
 
     calcula() {
-        return this.normalcdf(this.z())
+        let value = this.normalcdf(this.z());
+        return this.lowerTail ? 1 - value : value;
     };
 
 }
-
+// Probabilidade de obj < 6, em distribuição com média = 8 e desvio padrão = 2
 // console.log(new DistribuicaoNormal(6, 8, 2).calcula())
-
+// Probabilidade de 8 < obj < 10, em distribuição com média = 8 e desvio padrão = 2
+// console.log(new DistribuicaoNormal(10, 8, 2).calcula()
+//     - new DistribuicaoNormal(8, 8, 2).calcula())
+// Probabilidade de obj < 6 ou obj > 10, em distribuição com média = 8 e desvio padrão = 2
+// console.log(new DistribuicaoNormal(6, 8, 2).calcula()
+//     + new DistribuicaoNormal(10, 8, 2, true).calcula())
