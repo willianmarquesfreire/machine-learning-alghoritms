@@ -361,6 +361,13 @@ class DistribuicaoNormal {
         return z;
     }
 
+    calcula() {
+        let value = new Z().normalcdf(this.z());
+        return this.lowerTail ? 1 - value : value;
+    };
+}
+
+class Z {
     normalcdf(X) {
         var T = 1 / (1 + .2316419 * Math.abs(X));
         var D = .3989423 * Math.exp(-X * X / 2);
@@ -370,13 +377,9 @@ class DistribuicaoNormal {
         }
         return Prob
     }
-
-    calcula() {
-        let value = this.normalcdf(this.z());
-        return this.lowerTail ? 1 - value : value;
-    };
 }
-// console.log(new DistribuicaoNormal().normalcdf(1))
+
+// console.log(new Z().normalcdf(1))
 // Probabilidade de obj < 6, em distribuição com média = 8 e desvio padrão = 2
 // console.log(new DistribuicaoNormal(6, 8, 2).calcula())
 // Probabilidade de 8 < obj < 10, em distribuição com média = 8 e desvio padrão = 2
@@ -468,3 +471,65 @@ class IntervaloConfianca {
 // 20 responde nenhum, p = 20/1000 = 0,02; Valor de z* = 1,96
 // console.log(new IntervaloConfianca(1000, 95)
 //     .margemErroProporcao([650,330,20], 0));
+
+/*
+    ** Teste de hipótese **
+    - Confirmar ou negar uma premissa usando amostra
+        - H0: hipótese nula, alegação a se testar
+        - Presume-se que H0 é verdadeira, a menos que evidências a contrariem
+        - Ha = Hipótese alternativa
+    - Score Padrão: erros padrão dos dados abaixo ou acima da média
+    - Versão padronizada: Estatística de teste
+    - Se a estatística de teste estiver próxima a zero ou num intervalo onde deve
+    estar, então não se pode rejeitar H0
+    - Se estive próximo a cauda, aí pode
+    - Alfa e valor-p
+        - Níveis de alfa: 0,01 ou 0,05
+        - valor-p >= alfa: Não Rejeita H0
+        - valor-p <= alfa: Rejeita H0
+    - Etapas:
+        - Define tamanho da amostra
+        - Coleta dados
+        - Calcula média e deviso padrão
+        - Define H0 e Ha
+        - Define alfa
+        - Padroniza dados para gerar a estatística de teste
+        - Encontra valor-p na tabela Z
+        - Compara com alfa
+        - Verediz
+    - Fórmula Estatística de Teste:
+        - Média: z = (X - média) / (desvio padrão / raíz quadrada de N)
+        - Proporção: z = (p - p0) / (raizQuadrada(p0 * (1 - p0) / n)
+    - Erros:
+        - Tipo 1: rejeita H0 quando não deveria, chance = alfa
+        - Tipo 2: não rejeita H0 quando deveria, chance depende tamanho da amostra
+        - Ocorrem devido ao acaso
+*/
+
+class TesteDeHipotese {
+    // suposição de média ou proporção
+    constructor(n, suposicao) {
+        this.n = n;
+        this.x = suposicao;
+    }
+    estatisticaTesteMedia(desvioPadrao, media) {
+        this.desvioPadrao = desvioPadrao;
+        this.media = media;
+        this.z = (this.x - this.media) / (this.desvioPadrao / Math.sqrt(this.n));
+        this.pValue = new Z().normalcdf(this.z);
+        this.pValue = (this.x > this.media) ? 1 - this.pValue : this.pValue;
+        return this.pValue;
+    }
+    estatisticaTesteProporcao(p) {
+        this.p0 = p / this.n;
+        this.p = this.x / this.n;
+        this.z = (this.p - this.p0) / Math.sqrt((this.p0 * (1 - this.p0)) / this.n)
+        this.pValue = new Z().normalcdf(this.z);
+        this.pValue = (this.x > this.p) ? 1 - this.pValue : this.pValue;
+        return this.pValue;
+    }
+}
+// Em média 22 crianças são obesas; H0 = média = 22; Ha = média > 22
+// console.log(new TesteDeHipotese(100, 23).estatisticaTesteMedia(4, 22))
+// Em média 75% votam em A; H0 = p = 0,75; Ha = p < 0,75
+// console.log(new TesteDeHipotese(100, 73).estatisticaTesteProporcao(75))
