@@ -375,8 +375,8 @@ class DistribuicaoNormal {
         let value = this.normalcdf(this.z());
         return this.lowerTail ? 1 - value : value;
     };
-
 }
+// console.log(new DistribuicaoNormal().normalcdf(1))
 // Probabilidade de obj < 6, em distribuição com média = 8 e desvio padrão = 2
 // console.log(new DistribuicaoNormal(6, 8, 2).calcula())
 // Probabilidade de 8 < obj < 10, em distribuição com média = 8 e desvio padrão = 2
@@ -385,3 +385,86 @@ class DistribuicaoNormal {
 // Probabilidade de obj < 6 ou obj > 10, em distribuição com média = 8 e desvio padrão = 2
 // console.log(new DistribuicaoNormal(6, 8, 2).calcula()
 //     + new DistribuicaoNormal(10, 8, 2, true).calcula())
+
+/*
+    ** Saber se distribuição é normal **
+    - Histogramas
+    - Diagrama de Probabilidade Normal Q-Q Plot
+    - Teste de Shapiro-Wilk
+        - Teste de Hipótese
+        - H0: Dados estão normalmente distribuídos
+        - Alfa = 0.05
+        - p-value <= 0.05: Rejeita hipótese nula
+        - p-value > 0.05: Não é possível rejeitar a hipótese nula
+*/
+
+/*
+    - Estatística Paramétrica: Requer dados em conformidade com alguma distribuição
+        Ex: Dist. Normal
+        Oferece menos riscos, tendendo a ser mais preciso que o não paramétrico
+    - Estatística Não Paramétrica: Quando dados não estão em conformidade com
+        alguma distribuição, ou não se conhece a distribuição
+*/
+
+/*
+    ** Intervalos de Confiança **
+        - Inferir características da população a partir de amostra, para reduzir custo
+            e aumentar viabilidade
+        - Preço: erro padrão e nível de confiança
+        - Riscos: Dados ruins e enviesamento
+    - Intervalo de confiança: Parâmetro mais ou menos à margem de erro estimada
+    - Parâmetro: Valor a ser estimado
+    - Margem de erro: Variabilidade, para mais ou menos
+    - Nível de confiança: de 80 a 99%
+    - Z*: 80 - 1,28; 90: 1,64; 95: 1,96; 98: 2,33; 99: 2,58;
+    - Tamanho da Amostra (n)
+    Ex: Entre 63 e 67% dos entrevistados pretendem votar em A, com nível de confiança
+    de 95%
+        Parâmetro: Intenção de Voto (Proporção)
+        Nível de confiança: 95%
+        Intervalo de confiança: Entre 63 e 67%
+        Erro padrão: 1,96
+        (n) Entrevistados: 1000
+        Margem de Erro: +-2%;
+    - Quanto maior nível de confiança, maior erro padrão
+    - Quanto maior amostra, menor erro padrão
+
+    - Intervalo de confiança para a média:
+        - X +- Z * (Desvio Padrão / Raís quadrada de N)
+    - Intervalo de confiança para a proporção:
+        - p +- Z * RaizQuadrada(p(1-p)/n)
+*/
+
+class IntervaloConfianca {
+    constructor(n, intervaloConfianca) {
+        this.n = n;
+        this.intervaloConfianca = intervaloConfianca;
+        switch (intervaloConfianca) {
+            case 80: this.z = 1.28; break;
+            case 90: this.z = 1.64; break;
+            case 95: this.z = 1.96; break;
+            case 98: this.z = 2.33; break;
+            case 99: this.z = 2.58; break;
+        }
+    }
+    // Para mais e para menos (+-)
+    margemErroMedia(desvioPadrao, media) {
+        this.desvioPadrao = desvioPadrao;
+        this.media = media;
+        return this.z * (this.desvioPadrao / Math.sqrt(this.n));
+    }
+    margemErroProporcao(proporcoes, indexProporcao) {
+        this.proporcoes = proporcoes;
+        this.proporcao = proporcoes[indexProporcao] / this.n;
+        return this.z * Math.sqrt((this.proporcao * (1 - this.proporcao)) / this.n)
+    }
+}
+
+// Descobrir salário médio; 100 pesquisados, int conf: 95%, desv pad: 1100.00,
+// média: 5.800,00, z* = 1,96
+// console.log(new IntervaloConfianca(100, 95).margemErroMedia(1100, 5800));
+// Proporção de eleitores em votar em A: 1000 pesquisados, int conf: 95
+// 650 responde A, p = 650/1000 = 0,65; 330 responde B, p = 330/1000 = 0,33
+// 20 responde nenhum, p = 20/1000 = 0,02; Valor de z* = 1,96
+// console.log(new IntervaloConfianca(1000, 95)
+//     .margemErroProporcao([650,330,20], 0));
