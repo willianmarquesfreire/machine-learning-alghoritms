@@ -203,8 +203,8 @@ class Variabilidade {
         this.dados = this.dados.sort((a, b) => a - b);
         return this.dados[this.dados.length - 1] - this.dados[0];
     }
-
 }
+
 
 // Exemplos:
 // let variabilidade = new Variabilidade([40.000,18.000,12.000,250.000,30.000,140.000,300.000,40.000,800.000]);
@@ -314,6 +314,13 @@ class Probabilidade {
                 a tabela Z. Z = (amostra - média) / desvioPadrão
 */
 
+class Fatorial {
+    static fatorial(n) {
+        if (n <= 0) return 1;
+        return n * Fatorial.fatorial(n - 1);
+    }
+}
+
 class DistribuicaoBinomial {
     // sucessoEsperado, probabilidadeSucesso, nrExperimentos
     constructor(x, p, n) {
@@ -322,8 +329,8 @@ class DistribuicaoBinomial {
         this.n = n;
     }
     calcula() {
-        let fatorial = this.fatorial(this.n)
-            / (this.fatorial(this.x) * this.fatorial(this.n - this.x));
+        let fatorial = Fatorial.fatorial(this.n)
+            / (Fatorial.fatorial(this.x) * Fatorial.fatorial(this.n - this.x));
         return fatorial * Math.pow(this.p, this.x) * Math.pow(1 - this.p, this.n - this.x)
     }
     cumulativa() {
@@ -333,10 +340,6 @@ class DistribuicaoBinomial {
             this.x--;
         }
         return soma;
-    }
-    fatorial(n) {
-        if (n <= 0) return 1;
-        return n * this.fatorial(n - 1);
     }
 }
 // console.log(new DistribuicaoBinomial(3, 0.5, 5).calcula())
@@ -613,5 +616,156 @@ class TStudent {
     }
     // Olhar na tabela T de Student
 }
-
 // console.log(new TStudent(75, 10, 9).calcula(80))
+
+// Correlação e Regressão Linear
+// Verificar se existe uma relação matemática entre variáveis, e como pode medir
+// Usar para fazer previsão
+// Regressão linear:
+// Eixo Y: variável de resposta ou dependente
+// Eixo X: variável explanatória ou independente
+/*
+    Correlação (R)
+        - Mostra a força e direção da relação entre variáveis
+        - Valor entre -1 e 1
+        - Correlação de A ~ B é a mesma que B ~ A
+        - Força e direção: 
+        - 1 0,7 0,5 0,25 0 -0,25 -0,5 -0,7 -1
+        - Perfeita, forte, moderada, fraca, inexistente, fraca, moderada, forte, perfeita
+        - Se a reta em X tente a +infinito: positiva
+        - Se a reta tende de X para -infinito: negativa
+    Coeficiente de Determinação (R²)
+        - Mostra o quanto o modelo consegue explicar os valores
+        - Quanto maior, mais explicativo
+        - O restante da variabilidade está em variáveis não incluídas no modelo
+        - Varia entre 0 e 1 positivo
+        - Calcula-se o quadrado do coeficiente de correlação (R)
+    Regressão Linear:
+        - Inclinação: a cada unidade que aumenta x, y sobre o valor de inclinação
+        - Intersecação: x = 0
+        - Previsão: intersecção + (inclinação * valor a prever)
+        - Residuais: o quanto valor está distante da reta
+        - Outliers: valores fora do padrão
+    Correlação > Inclinação > Interceptação > Previsão
+    Correlação de Pearson:
+        - r = covariação(X,Y) / raizQuadrada(variância(x) * variância(y))
+*/
+class CorrelacaoPearson {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.variabilidadeX = new Variabilidade(this.x, true);
+        this.variabilidadeY = new Variabilidade(this.y, true);
+        this.centralidadeX = new Centralidade(this.x);
+        this.centralidadeY = new Centralidade(this.y);
+    }
+    previsao(v) {
+        return this.interceptacao() + (this.inclinacao() * v);
+    }
+    interceptacao() {
+        return this.centralidadeY.media() - (this.inclinacao() * this.centralidadeX.media());
+    }
+    inclinacao() {
+        return this.correlacao()
+            * (this.variabilidadeY.desvioPadrao() / this.variabilidadeX.desvioPadrao())
+    }
+    correlacao() {
+        let x = this.variabilidadeX.variancia();
+        let y = this.variabilidadeY.variancia();
+        return this.covariacao() / Math.sqrt(x * y);
+    }
+    covariacao() {
+        let mediaX = new Centralidade(this.x).media();
+        let mediaY = new Centralidade(this.y).media();
+        let somatorio = 0;
+        this.x.forEach((x, i) => {
+            somatorio += (x - mediaX) * (this.y[i] - mediaY);
+        })
+        return somatorio / this.x.length - 1;
+    }
+}
+
+let correlacao = new CorrelacaoPearson([18, 23, 25, 33, 34, 43, 48, 51, 58, 63, 67],
+    [871, 1100, 1393, 1654, 1915, 2100, 2356, 2698, 2959, 3000, 3100]);
+
+
+// console.log(correlacao.covariacao());
+// console.log(correlacao.correlacao());
+// console.log(correlacao.inclinacao());
+// console.log(correlacao.interceptacao());
+// console.log(correlacao.previsao(54));
+
+/*
+    Regressão Logística:
+        - Semelhante à regressão linear, porém y é binário, sucesso 1 ou fracasso 0      
+*/
+
+/*
+    EDA: Análise exploratório de dados, John Wilder Rukey (1977)
+        - Busca obter informações ocultas sobre os dados
+        - Variação, anomalias, distribuição, tendências, padrões e relações
+*/
+
+/*
+    Distribuição de Poisson
+        - Mede a probabilidade de ocorrência de eventos em intervalo de tempo,
+        em vez de um certo número de experimentos
+        - Eventos a cada intervalo devem ser independentes
+        - Existem tabelas de probabilidade
+
+        P(X = x) = e ^ (-lambda * ((lambda ^ x) / fatorial(x)))
+            - x: nr de eventos que estão sendo calculados
+            - lambda: nr médio de eventos que ocorre por intervalo
+        P(X <= x) = soma probabilidades menores até o zero + ele
+        P(X > x) = 1 - P(X <= x)
+*/
+
+class DistribuicaoPoisson {
+    constructor(x, lambda) {
+        this.x = x;
+        this.lambda = lambda;
+    }
+    calcula(lowerTail, v) {
+        v = (v != null) ? v : this.x;
+        let result = (Math.pow(Math.E, -this.lambda) * (Math.pow(this.lambda, v) / Fatorial.fatorial(v)));
+        if (lowerTail) {
+            if (v >= 0)
+                return result + this.calcula(lowerTail, v - 1);
+        } else return result;
+        return 0;
+    }
+}
+// Nr de acidentes por dia é 2. Probabilidade de ocorrer 3 em um dia?
+// =
+// console.log(new DistribuicaoPoisson(3, 2).calcula())
+// <=
+// console.log(new DistribuicaoPoisson(3, 2).calcula(true))
+// >
+// console.log(1 - new DistribuicaoPoisson(3, 2).calcula(true))
+
+/** Teste Qui Quadrado */
+
+/*
+    Teste T de Student
+        - Teste de hipótese
+        - Compara duas médias
+        - Pré-requisitos
+            - Duas populações são independentes
+            - Variável dependente normalmente distribuída
+            - Variância entre as duas variáveis é aproximada
+        - Útil para comparar duas populações
+    Anova
+        - Análise de variância
+        - Teste de hipótese
+        - Usada para comparar 3 ou mais grupos
+        - Uma variável quantitativa e uma ou mais categóricas
+        - Olha todo o conjunto
+        - Busca a variação entre grupos comparando a variação dentro dos grupos
+        - h0: não há diferença significativa 
+        - ha: há diferença significativa
+        - Grande número de comparações
+        - Teste F
+        - Teste de Tukey
+*/
+
+/** Outliers */
