@@ -1,8 +1,7 @@
 {
   "name": "machine-learning-alghoritms",
   "version": "1.0.0",
-  "description": "",
-  "main": "1r.js",
+  "main": "backpropagation.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,5 +14,6 @@
   "bugs": {
     "url": "https://github.com/wmfsystem/machine-learning-alghoritms/issues"
   },
-  "homepage": "https://github.com/wmfsystem/machine-learning-alghoritms#readme"
+  "homepage": "https://github.com/wmfsystem/machine-learning-alghoritms#readme",
+  "description": ""
 }
