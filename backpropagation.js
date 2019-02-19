@@ -1,9 +1,9 @@
 
 let dados = [
-    [0, 0, 0],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 0]
+    [0, 0, 1, 0],
+    [0, 1, 1, 1],
+    [1, 0, 1, 1],
+    [1, 1, 1, 0]
 ]
 
 class Neuronio {
@@ -11,7 +11,6 @@ class Neuronio {
         this.tipo = attrs.tipo;
         this.id = attrs.id;
         this.parent = this.parent || [];
-        this.delta = 0;
         this.erro = 0;
         this.somas = {};
         this.pesosIniciais = attrs.pesosIniciais || [];
@@ -37,7 +36,7 @@ class Neuronio {
         this._ativacao = valor || 0;
     }
     set soma(valor) {
-        this._soma = valor || 1;
+        this._soma = valor;
     }
     get soma() {
         let sum = 0;
@@ -45,6 +44,20 @@ class Neuronio {
             sum += this.somas[s][0] * this.somas[s][1];
         })
         return sum;
+    }
+    get delta() {
+        if (this.neuronios != null && this.neuronios.length > 0) {
+            let sum = 0;
+            this.neuronios.forEach(n => {
+                sum += (n.neuronio.erro * n.peso);
+            })
+            return sum * this.derivada;
+        } else {
+            return this.erro * this.derivada;
+        }
+    }
+    set delta(_d) {
+        this._d = _d;
     }
 }
 
@@ -64,6 +77,7 @@ class Backpropagation {
     }
     treina() {
         for (let ep = 0; ep < this.epocas; ep++) {
+            // this.shuffleArray(this.matriz)
             for (let i = 0; i < this.matriz.length; i++) {
                 for (let j = 0; j < this.modelo.length; j++) {
                     this.modelo[j].ativacao = this.matriz[i][j]
@@ -96,9 +110,9 @@ class Backpropagation {
         }
     }
     feedBackward(neuronio, dado) {
-        this.modelo.forEach(m => this.zeraDelta(m))
-        this.calculaDelta(neuronio, dado)
-        this.neuroniosOcultos.forEach(n => {
+        // this.modelo.forEach(m => this.zeraDelta(m))
+        // this.calculaDelta(neuronio, dado)
+        this.neuroniosEntrada.forEach(n => {
             this.ajustaPesos(n, dado)
         })
     }
@@ -108,6 +122,8 @@ class Backpropagation {
 
                 n.peso += (this.txaprendizagem * n.neuronio.delta * n.neuronio.ativacao);
 
+                
+                // this.ajustaPesos(n.neuronio, dado)
                 if (neuronio.parent && neuronio.parent.length > 0) {
                     neuronio.parent.forEach(p => {
                         this.ajustaPesos(p, dado)
@@ -131,6 +147,14 @@ class Backpropagation {
             })
         }
     }
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            let temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+    }
     calculaErros(dado, neuronios) {
         let erros = [];
         neuronios.reverse().forEach((r, j) => {
@@ -139,6 +163,8 @@ class Backpropagation {
                 neuronio: r,
                 erro: erro
             })
+
+            console.log(r.id, erro)
             r.erro = erro;
         })
         return erros;
@@ -216,17 +242,11 @@ class Backpropagation {
 
 
 let bp = new Backpropagation(dados, {
-    entrada: [[0, 0], [0, 0]],
-    ocultos: [[0], [0]],
+    entrada: [[0.1, 0.1], [0.1, 0.1], [0.1, 0.1]],
+    ocultos: [[0.1], [0.1]],
     saida: [0]
-}, 1, 50, 0.3);
+}, 1, 10, 0.1);
 
 bp.treina();
-let a = bp.prediz([0, 0]);
-let b = bp.prediz([0, 1]);
-let c = bp.prediz([1, 0]);
-let d = bp.prediz([1, 1]);
-console.log(a.resultado)
-console.log(b.resultado)
-console.log(c.resultado)
-console.log(d.resultado)
+
+dados.forEach(d => console.log(bp.prediz(d).resultado))
