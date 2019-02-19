@@ -49,8 +49,8 @@ class Neuronio {
 }
 
 class Backpropagation {
-    constructor(matriz, pesosIniciais, nrClasses, epocas) {
-        this.txaprendizagem = 0.3;
+    constructor(matriz, pesosIniciais, nrClasses, epocas, txaprendizagem) {
+        this.txaprendizagem = txaprendizagem;
         this.epocas = epocas;
         this.matriz = matriz;
         this.nrNeuroniosEntrada = pesosIniciais.entrada.length;
@@ -87,7 +87,16 @@ class Backpropagation {
             }
         }
     }
+    zeraDelta(neuronio) {
+        if (neuronio.neuronios && neuronio.neuronios.length > 0) {
+            neuronio.neuronios.forEach(n => {
+                n.neuronio.delta = 0;
+                this.zeraDelta(n.neuronio)
+            })
+        }
+    }
     feedBackward(neuronio, dado) {
+        this.modelo.forEach(m => this.zeraDelta(m))
         this.calculaDelta(neuronio, dado)
         this.neuroniosOcultos.forEach(n => {
             this.ajustaPesos(n, dado)
@@ -108,10 +117,9 @@ class Backpropagation {
         }
     }
     calculaDelta(neuronio, dado) {
-        if (neuronio.tipo == 'entrada') return;
         if (neuronio.neuronios != null && neuronio.neuronios.length > 0) {
             neuronio.neuronios.forEach(n => {
-                neuronio.delta += (n.neuronio.erro * n.neuronio.derivada * n.peso);
+                neuronio.delta += (n.neuronio.erro * n.peso);
             })
             neuronio.delta *= neuronio.derivada;
         } else {
@@ -211,7 +219,7 @@ let bp = new Backpropagation(dados, {
     entrada: [[0, 0], [0, 0]],
     ocultos: [[0], [0]],
     saida: [0]
-}, 1, 10000);
+}, 1, 50, 0.3);
 
 bp.treina();
 let a = bp.prediz([0, 0]);
