@@ -25,10 +25,10 @@ class Backpropagation {
         this.txaprendizagem = attrs.txaprendizagem;
         this.iEntrada = 0;
         this.iSaida = this.pesos.length - 1;
-        this.inicializa()
+        this.neuronios = this.inicializaVetor(this.pesos);
+        // this.inicializa()
     }
     inicializa() {
-        this.ativacao = this.inicializaVetor(this.pesos);
         this.delta = Object.assign([], this.ativacao);
         this.inicializaDelta(this.delta);
     }
@@ -40,13 +40,16 @@ class Backpropagation {
             }
         }
     }
-    inicializaVetor(ativacao) {
+    inicializaVetor(pesos) {
         let array = [];
-        for (let i = 0; i < ativacao.length; i++) {
-            let size = ativacao[i].length;
+        for (let i = 0; i < pesos.length; i++) {
+            let size = pesos[i].length;
             array[i] = [];
             for (let j = 0; j < size; j++) {
-                array[i].push(0);
+                array[i].push({
+                    ativacao: 0,
+                    delta: 0
+                });
             }
         }
         return array;
@@ -64,8 +67,8 @@ class Backpropagation {
                 this.inicializa();
                 this.ativacaoPrimeiraCamada(this.dados[i]);
                 this.feedForward();
-                if (this.desejado[i] != this.ativacao[this.iSaida][0]) {
-                    this.previsto[i] = this.ativacao[this.iSaida][0];
+                if (this.desejado[i] != this.neuronios[this.iSaida][0].ativacao) {
+                    this.previsto[i] = this.neuronios[this.iSaida][0].ativacao;
                     if (this.desejado[i] instanceof Array) this.desejado[i].forEach(d => this.feedBackward(d, i))
                     else this.feedBackward(this.desejado[i], 0)
                 }
@@ -78,14 +81,14 @@ class Backpropagation {
         }
     }
     ativacaoPrimeiraCamada(dado) {
-        for (let i = 0; i < this.ativacao[0].length; i++) {
-            this.ativacao[0][i] = dado[i];
+        for (let i = 0; i < this.neuronios[0].length; i++) {
+            this.neuronios[0][i].ativacao = dado[i];
         }
     }
     feedForward(iCamada) {
         if (!iCamada) iCamada = 1;
-        if (this.ativacao[iCamada]) {
-            this.ativacao[iCamada] = this.multiplicacao(this.ativacao[iCamada - 1], this.pesos[iCamada - 1])
+        if (this.neuronios[iCamada]) {
+            this.neuronios[iCamada] = this.multiplicacao(this.neuronios[iCamada], this.neuronios[iCamada - 1], this.pesos[iCamada - 1])
             this.feedForward(iCamada + 1)
         }
     }
@@ -103,7 +106,7 @@ class Backpropagation {
             for (let i = 0; i < this.pesos[iCamada - 1].length; i++) {
                 for (let j = 0; j < this.pesos[iCamada - 1][i].length; j++) {
                     this.pesos[iCamada - 1][i][j] += this.txaprendizagem
-                        * this.delta[iCamada][j] * this.ativacao[iCamada - 1][i];
+                        * this.neuronios[iCamada][j].delta * this.neuronios[iCamada - 1][i].ativacao;
                 }
             }
             // console.log(this.pesos[iCamada - 1].toString())
@@ -112,36 +115,39 @@ class Backpropagation {
     }
     calculaDelta(desejado, iNeuronio, iCamada) {
         if (!iCamada) iCamada = this.iSaida;
-        if (this.delta[iCamada]) {
-            if (this.delta[iCamada + 1]) {
-                for (let i = 0; i < this.delta[iCamada].length; i++) {
+        if (this.neuronios[iCamada]) {
+            if (this.neuronios[iCamada + 1]) {
+                for (let i = 0; i < this.neuronios[iCamada].length; i++) {
                     let soma = 0;
                     this.pesos[iCamada][i].forEach(peso => {
-                        soma += (peso * this.delta[iCamada + 1][iNeuronio])
+                        soma += (peso * this.neuronios[iCamada + 1][iNeuronio].delta)
                     })
-                    this.delta[iCamada][i] = this.derivada(this.ativacao[iCamada][i]) * soma;
+                    this.neuronios[iCamada][i].delta = this.derivada(this.neuronios[iCamada][i].ativacao) * soma;
                 }
                 if (iCamada > 1) this.calculaDelta(desejado, iNeuronio, iCamada - 1)
             } else {
-                this.delta[iCamada][iNeuronio] = (desejado - this.ativacao[iCamada]) * this.derivada(this.ativacao[iCamada])
+                this.neuronios[iCamada][iNeuronio].delta = (desejado - this.neuronios[iCamada][iNeuronio].ativacao) * this.derivada(this.neuronios[iCamada][iNeuronio].ativacao)
                 this.calculaDelta(desejado, iNeuronio, iCamada - 1)
             }
         }
     }
-    multiplicacao(ativacao, pesos) {
+    multiplicacao(camada, ativacao, pesos) {
         let vetor = []
         for (let i = 0; i < pesos.length; i++) {
             for (let j = 0; j < pesos[i].length; j++) {
                 vetor[j] = vetor[j] || 0;
-                vetor[j] += pesos[i][j] * ativacao[i];
+                vetor[j] += pesos[i][j] * ativacao[i].ativacao;
             }
         }
-        return vetor.map(v => this.sigmoide(v));
+        return camada.map((v, i) => {
+            v.ativacao = this.sigmoide(vetor[i]);
+            return v
+        });
     }
     prediz(dado) {
         this.ativacaoPrimeiraCamada(dado);
         this.feedForward();
-        return this.ativacao[this.iSaida]
+        return this.neuronios[this.iSaida][0].ativacao
     }
 }
 
