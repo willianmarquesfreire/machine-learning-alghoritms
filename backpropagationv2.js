@@ -149,7 +149,8 @@ let bp = new Backpropagation({
     pesos: pesos,
     txaprendizagem: 0.3,
     dados: dados,
-    epocas: 10000,
+    epocas: 100000
+    ,
     desejado: desejado
 });
 
