@@ -1,7 +1,7 @@
 {
   "name": "machine-learning-alghoritms",
   "version": "1.0.0",
-  "main": "backpropagation.js",
+  "main": "backpropagationv2.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

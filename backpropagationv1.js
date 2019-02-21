@@ -1,4 +1,4 @@
-
+//  NÃO FUNCIONA
 let dados = [
     [0, 0, 1, 0],
     [0, 1, 1, 1],
@@ -170,18 +170,8 @@ class Backpropagation {
         return erros;
     }
     erro(desejado, previsto) {
-        return desejado - previsto;
-        // return this.mse();
-    }
-    mse() {
-        let sum = 0;
-        this.matriz.forEach(m => {
-            sum += Math.pow(this.prediz(m).resultado - m[this.matriz[0].length - 1], 2)
-        })
-        return sum / this.matriz.length;
-    }
-    rmse() {
-        return Math.sqrt(this.mse())
+        // return desejado - previsto;
+        return Math.pow(desejado - previsto, 2)
     }
     resultado() {
         return this.neuroniosSaida.map(n => n.ativacao)
