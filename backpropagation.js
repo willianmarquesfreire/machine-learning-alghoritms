@@ -1,17 +1,15 @@
-let dados = [
-    [0, 0, 1],
-    [0, 1, 1],
-    [1, 0, 1],
-    [1, 1, 1]
-];
-
+class Peso {
+    constructor(neuronio, valor) {
+        this.neuronio = neuronio;
+        this.valor = valor;
+    }
+}
 
 class Neuronio {
     constructor(attrs) {
         this.delta = attrs.delta;
         this.ativacao = attrs.ativacao;
         this.pesos = attrs.pesos;
-        this.neuronios = attrs.neuronios;
         this.parent = attrs.parent;
         this.camada = attrs.camada;
         this.id = attrs.id;
@@ -20,7 +18,7 @@ class Neuronio {
         let sum = 0;
         if (this.parent && this.parent.length > 0) {
             this.parent.forEach(p => {
-                sum += (p.pesos[this.id] * p.ativacao);
+                sum += (p.pesos[this.id].valor * p.ativacao);
             })
             if (Number.isNaN(sum)) debugger
             return sum;
@@ -44,10 +42,10 @@ class Neuronio {
         this._delta = _delta;
     }
     get delta() {
-        if (this.neuronios && this.neuronios.length > 0) {
+        if (this.pesos && this.pesos instanceof Array) {
             let soma = 0;
-            this.neuronios.forEach((neuronio, i) => {
-                soma += this.pesos[i] * neuronio.delta;
+            this.pesos.forEach((peso, i) => {
+                soma += this.pesos[i].valor * peso.neuronio.delta;
             });
             if (Number.isNaN(soma * this.derivada())) debugger
             return soma * this.derivada();
@@ -69,41 +67,33 @@ class Backpropagation {
         this.iEntrada = 0;
         this.showLogs = attrs.showLogs;
         this.iSaida = this.pesosIniciais.length - 1;
-        this.camadas = this.inicializaVetor(this.pesosIniciais);
-        this.camadas.forEach((camada, iCamada) => {
-            camada.forEach((neuronio, iNeuronio) => {
-                neuronio.id = iNeuronio
-                neuronio.camada = iCamada;
-                if (neuronio.pesos) {
-                    neuronio.neuronios = neuronio.neuronios || [];
-                    neuronio.pesos.forEach((peso, iPeso) => {
-                        if (peso = 0) peso = Math.random() * 0.1;
-                        if (this.camadas[iCamada + 1]) {
-                            neuronio.neuronios.push(this.camadas[iCamada + 1][iPeso])
-                            this.camadas[iCamada + 1][iPeso].parent = this.camadas[iCamada + 1][iPeso].parent || [];
-                            this.camadas[iCamada + 1][iPeso].parent.push(neuronio)
-                        }
-                    })
-                }
-            })
-        })
+        this.inicializaVetor(this.pesosIniciais);
         if (this.showLogs) console.log("Rede Inicializada")
     }
     inicializaVetor(pesos) {
-        let array = [];
-        for (let i = 0; i < pesos.length; i++) {
+        this.camadas = []
+        for (let i = pesos.length - 1; i >= 0; i--) {
             let size = pesos[i].length;
-            array[i] = [];
+            this.camadas[i] = [];
             for (let j = 0; j < size; j++) {
                 let neuronio = new Neuronio({
                     ativacao: 0,
                     delta: 0,
-                    pesos: pesos[i][j]
+                    pesos: pesos[i][j],
+                    camada: i,
+                    id: j
                 });
-                array[i].push(neuronio);
+                if (this.camadas[i + 1]) {
+                    neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
+                        if (peso = 0) peso = Math.random() * 0.1;
+                        this.camadas[i + 1][iPeso].parent = this.camadas[i + 1][iPeso].parent || [];
+                        this.camadas[i + 1][iPeso].parent.push(neuronio)
+                        return new Peso(this.camadas[i + 1][iPeso], peso);
+                    })
+                }
+                this.camadas[i].push(neuronio);
             }
         }
-        return array;
     }
     treina() {
         for (let epoca = 0; epoca < this.epocas; epoca++) {
@@ -160,9 +150,8 @@ class Backpropagation {
         if (this.camadas[iCamada - 1]) {
             for (let i = 0; i < this.camadas[iCamada - 1].length; i++) {
                 for (let j = 0; j < this.camadas[iCamada - 1][i].pesos.length; j++) {
-                    this.camadas[iCamada - 1][i].pesos[j] += this.txaprendizagem
+                    this.camadas[iCamada - 1][i].pesos[j].valor += this.txaprendizagem
                         * this.camadas[iCamada][j].delta * this.camadas[iCamada - 1][i].ativacao;
-                    if (Number.isNaN(this.camadas[iCamada - 1][i].pesos[j])) debugger
                 }
             }
             this.atualizaPesos(iNeuronio, iCamada - 1)
@@ -171,13 +160,26 @@ class Backpropagation {
     prediz(dado) {
         this.ativacaoPrimeiraCamada(dado);
         let values = this.camadas[this.iSaida].map(at => at.ativacao);
-        let max = this.max(values);
+        let maxIndex = this.max(values);
         return {
             values: values,
-            max: max
+            maxIndex: maxIndex,
+            maxValue: values[maxIndex]
         }
     }
 }
+
+module.exports = {
+    Backpropagation: Backpropagation,
+    Neuronio: Neuronio
+}
+
+let dados = [
+    [0, 0, 1],
+    [0, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+];
 
 console.log("-----------> Binário")
 // Probabilidade, binário
@@ -202,7 +204,7 @@ let bp = new Backpropagation({
 bp.treina();
 
 dados.forEach(dado => {
-    console.log(bp.prediz(dado))
+    console.log(bp.prediz(dado).maxValue)
 })
 
 console.log("-----------> MultiClasse")
@@ -266,5 +268,5 @@ bp.treina();
 
 dados.forEach((dado, i) => {
     let obt = bp.prediz(dado);
-    console.log("Esperado: " + desejado[i].reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) + ", Obtido: " + obt.max)
+    console.log("Esperado: " + desejado[i].reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) + ", Obtido: " + obt.maxIndex)
 })
