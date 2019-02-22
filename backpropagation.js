@@ -21,6 +21,12 @@ class FuncaoAtivacao {
             return 1
         return 0
     }
+    linear(soma) {
+        return soma
+    }
+    derivadalinear(ativacao) {
+        return ativacao
+    }
     derivadastep(ativacao) {
         return ativacao
     }
@@ -31,10 +37,23 @@ class FuncaoAtivacao {
         return ativacao * (1 - ativacao)
     }
     tahn(soma) {
-        return (Math.exp(soma) - Math.exp(-soma)) / (Math.exp(soma) - Math.exp(-soma))
+        return Math.tanh(soma)
+        // return (Math.exp(soma) - Math.exp(-soma)) / (Math.exp(soma) - Math.exp(-soma))
     }
     derivadatahn(ativacao) {
-        return ativacao
+        return 1 - Math.pow(ativacao, 2)
+    }
+    logistica(soma)  {
+        return 1 / (1 + Math.exp(-soma)) // == sigmoide
+    }
+    derivadalogistica(ativacao) {
+        return ativacao * (1 - ativacao) // == sigmoide
+    }
+    atan(soma) {
+        return Math.atan(soma)
+    }
+    derivadaatan(ativacao) {
+        return 1 / (1 + Math.pow(ativacao, 2))
     }
     relu(soma) {
         if (soma >= 0)
@@ -42,13 +61,29 @@ class FuncaoAtivacao {
         return 0
     }
     derivadarelu(ativacao) {
-        return ativacao
+        if (ativacao >= 0)
+            return 1
+        return 0
     }
-    linear(soma) {
-        return soma
+    leakyrelu(soma) {
+        if (soma >= 0)
+            return soma
+        return 0.01 * soma
     }
-    derivadalinear(ativacao) {
-        return ativacao
+    derivadaleakyrelu(ativacao) {
+        if (ativacao >= 0)
+            return 1
+        return 0.01
+    }
+    randomizedrelu(soma) {
+        if (soma >= 0)
+            return soma
+        return Math.random() * 0.1 * soma
+    }
+    derivadarandomizedrelu(ativacao) {
+        if (ativacao >= 0)
+            return 1
+        return Math.random() * 0.1
     }
     softmax(x) {
         return x.map((value) => {
@@ -56,7 +91,7 @@ class FuncaoAtivacao {
         })
     }
     derivadasoftmax(ativacao) {
-        return ativacao
+        return 1 / (1 + Math.exp(-ativacao))
     }
 }
 
