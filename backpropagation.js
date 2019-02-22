@@ -5,6 +5,13 @@ class Peso {
     }
 }
 
+class CamadaDensa {
+    constructor(attrs) {
+        this.pesos = attrs.pesos;
+        this.neuronios = [];
+    }
+}
+
 class Neuronio {
     constructor(attrs) {
         this.delta = attrs.delta;
@@ -45,7 +52,7 @@ class Neuronio {
         if (this.pesos && this.pesos instanceof Array) {
             let soma = 0;
             this.pesos.forEach((peso, i) => {
-                soma += this.pesos[i].valor * peso.neuronio.delta;
+                soma += peso.valor * peso.neuronio.delta;
             });
             if (Number.isNaN(soma * this.derivada())) debugger
             return soma * this.derivada();
@@ -62,36 +69,34 @@ class Backpropagation {
         this.epocas = attrs.epocas;
         this.desejado = attrs.desejado[0] instanceof Array ? attrs.desejado : attrs.desejado.map(d => [d]);
         this.previsto = [];
-        this.pesosIniciais = attrs.pesos;
         this.txaprendizagem = attrs.txaprendizagem;
         this.iEntrada = 0;
         this.showLogs = attrs.showLogs;
-        this.iSaida = this.pesosIniciais.length - 1;
-        this.inicializaVetor(this.pesosIniciais);
+        this.camadas = attrs.camadas;
+        this.iSaida = this.camadas.length - 1;
+        this.inicializaVetor(this.camadas);
         if (this.showLogs) console.log("Rede Inicializada")
     }
-    inicializaVetor(pesos) {
-        this.camadas = []
-        for (let i = pesos.length - 1; i >= 0; i--) {
-            let size = pesos[i].length;
-            this.camadas[i] = [];
+    inicializaVetor(camadas) {
+        for (let i = camadas.length - 1; i >= 0; i--) {
+            let size = camadas[i].pesos.length;
             for (let j = 0; j < size; j++) {
                 let neuronio = new Neuronio({
                     ativacao: 0,
                     delta: 0,
-                    pesos: pesos[i][j],
+                    pesos: camadas[i].pesos[j],
                     camada: i,
                     id: j
                 });
                 if (this.camadas[i + 1]) {
                     neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
-                        if (peso = 0) peso = Math.random() * 0.1;
-                        this.camadas[i + 1][iPeso].parent = this.camadas[i + 1][iPeso].parent || [];
-                        this.camadas[i + 1][iPeso].parent.push(neuronio)
-                        return new Peso(this.camadas[i + 1][iPeso], peso);
+                        if (peso == 0) peso = Math.random() * 0.1;
+                        this.camadas[i + 1].neuronios[iPeso].parent = this.camadas[i + 1].neuronios[iPeso].parent || [];
+                        this.camadas[i + 1].neuronios[iPeso].parent.push(neuronio)
+                        return new Peso(this.camadas[i + 1].neuronios[iPeso], peso);
                     })
                 }
-                this.camadas[i].push(neuronio);
+                this.camadas[i].neuronios.push(neuronio);
             }
         }
     }
@@ -100,9 +105,9 @@ class Backpropagation {
             if (this.showLogs) console.log("Época: " + epoca)
             for (let i = 0; i < this.dados.length; i++) {
                 this.ativacaoPrimeiraCamada(this.dados[i]);
-                if (this.desejado[i] != this.camadas[this.iSaida].map(at => at.ativacao)) {
+                if (this.desejado[i] != this.camadas[this.iSaida].neuronios.map(at => at.ativacao)) {
                     this.desejado[i].forEach((d, iNeuronio) => this.calculaErro(d, iNeuronio, this.iSaida))
-                    this.previsto[i] = this.camadas[this.iSaida].map(saida => saida.ativacao);
+                    this.previsto[i] = this.camadas[this.iSaida].neuronios.map(saida => saida.ativacao);
                     this.desejado[i].forEach((d, j) => this.feedBackward(d, j))
                 }
             }
@@ -130,8 +135,8 @@ class Backpropagation {
         return res;
     }
     ativacaoPrimeiraCamada(dado) {
-        for (let i = 0; i < this.camadas[0].length; i++) {
-            this.camadas[0][i].ativacao = dado[i];
+        for (let i = 0; i < this.camadas[0].neuronios.length; i++) {
+            this.camadas[0].neuronios[i].ativacao = dado[i];
         }
     }
     max(obt) {
@@ -144,14 +149,14 @@ class Backpropagation {
         this.atualizaPesos(iNeuronio, iCamada)
     }
     calculaErro(desejado, iNeuronio, iCamada) {
-        this.camadas[iCamada][iNeuronio].erro = desejado - this.camadas[iCamada][iNeuronio].ativacao;
+        this.camadas[iCamada].neuronios[iNeuronio].erro = desejado - this.camadas[iCamada].neuronios[iNeuronio].ativacao;
     }
     atualizaPesos(iNeuronio, iCamada) {
         if (this.camadas[iCamada - 1]) {
-            for (let i = 0; i < this.camadas[iCamada - 1].length; i++) {
-                for (let j = 0; j < this.camadas[iCamada - 1][i].pesos.length; j++) {
-                    this.camadas[iCamada - 1][i].pesos[j].valor += this.txaprendizagem
-                        * this.camadas[iCamada][j].delta * this.camadas[iCamada - 1][i].ativacao;
+            for (let i = 0; i < this.camadas[iCamada - 1].neuronios.length; i++) {
+                for (let j = 0; j < this.camadas[iCamada - 1].pesos[i].length; j++) {
+                    this.camadas[iCamada - 1].neuronios[i].pesos[j].valor += this.txaprendizagem
+                        * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
                 }
             }
             this.atualizaPesos(iNeuronio, iCamada - 1)
@@ -159,7 +164,7 @@ class Backpropagation {
     }
     prediz(dado) {
         this.ativacaoPrimeiraCamada(dado);
-        let values = this.camadas[this.iSaida].map(at => at.ativacao);
+        let values = this.camadas[this.iSaida].neuronios.map(at => at.ativacao);
         let maxIndex = this.max(values);
         return {
             values: values,
@@ -186,14 +191,12 @@ console.log("-----------> Binário")
 
 let desejado = [0, 1, 1, 0]
 
-let pesos = [
-    [[-0.424, -0.740, -0.961], [0.358, -0.577, -0.469], [0.1, 0.1, 0.1]],
-    [[-0.017], [-0.893], [0.148]],
-    [0]
-];
-
 let bp = new Backpropagation({
-    pesos: pesos,
+    camadas: [
+        new CamadaDensa({pesos: [[-0.424, -0.740, -0.961], [0.358, -0.577, -0.469], [0.1, 0.1, 0.1]]}),
+        new CamadaDensa({pesos: [[-0.017], [-0.893], [0.148]]}),
+        new CamadaDensa({pesos: [0]})
+    ],
     txaprendizagem: 0.3,
     dados: dados,
     epocas: 10000,
@@ -248,17 +251,14 @@ desejado = [
 ];
 
 
-
-pesos = [
-    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-    [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-    [0, 0, 0]
-];
-
 bp = new Backpropagation({
-    pesos: pesos,
     txaprendizagem: 0.3,
     dados: dados,
+    camadas: [
+        new CamadaDensa({pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]}),
+        new CamadaDensa({pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]}),
+        new CamadaDensa({pesos: [0, 0, 0]})
+    ],
     epocas: 1000,
     showLogs: false,
     desejado: desejado
