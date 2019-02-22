@@ -1,14 +1,43 @@
 class Peso {
     constructor(neuronio, valor) {
         this.neuronio = neuronio;
-        this.valor = valor;
+        // gaussian normal
+        this.valor = valor === 0 ? Math.sqrt(-2 * Math.log(Math.random()))*Math.cos((2*Math.PI) * Math.random()) : valor;
     }
 }
 
 class CamadaDensa {
     constructor(attrs) {
         this.pesos = attrs.pesos;
-        this.neuronios = [];
+        this.id = attrs.id;
+    }
+    inicializaCamada(entrada, saida) {
+        this.entrada = entrada;
+        this.saida = saida;
+        this.inicializaVetor();
+    }
+    inicializaVetor() {
+        let size = this.pesos.length;
+        for (let j = 0; j < size; j++) {
+            let neuronio = new Neuronio({
+                ativacao: 0,
+                delta: 0,
+                pesos: this.pesos[j],
+                camada: this.id,
+                id: j
+            });
+            this.neuronios = this.neuronios || [];
+            if (this.saida) {
+                if (neuronio.pesos) {
+                    neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
+                        this.saida.neuronios[iPeso].parent = this.saida.neuronios[iPeso].parent || [];
+                        this.saida.neuronios[iPeso].parent.push(neuronio)
+                        return new Peso(this.saida.neuronios[iPeso], peso);
+                    })
+                }
+            }
+            this.neuronios.push(neuronio);
+        }
     }
 }
 
@@ -73,32 +102,13 @@ class Backpropagation {
         this.iEntrada = 0;
         this.showLogs = attrs.showLogs;
         this.camadas = attrs.camadas;
-        this.iSaida = this.camadas.length - 1;
-        this.inicializaVetor(this.camadas);
-        if (this.showLogs) console.log("Rede Inicializada")
-    }
-    inicializaVetor(camadas) {
-        for (let i = camadas.length - 1; i >= 0; i--) {
-            let size = camadas[i].pesos.length;
-            for (let j = 0; j < size; j++) {
-                let neuronio = new Neuronio({
-                    ativacao: 0,
-                    delta: 0,
-                    pesos: camadas[i].pesos[j],
-                    camada: i,
-                    id: j
-                });
-                if (this.camadas[i + 1]) {
-                    neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
-                        if (peso == 0) peso = Math.random() * 0.1;
-                        this.camadas[i + 1].neuronios[iPeso].parent = this.camadas[i + 1].neuronios[iPeso].parent || [];
-                        this.camadas[i + 1].neuronios[iPeso].parent.push(neuronio)
-                        return new Peso(this.camadas[i + 1].neuronios[iPeso], peso);
-                    })
-                }
-                this.camadas[i].neuronios.push(neuronio);
-            }
+        for (let i = this.camadas.length - 1; i >= 0; i--) {
+            this.camadas[i].id = i;
+            this.camadas[i].inicializaCamada(this.camadas[i - 1], this.camadas[i + 1])
+
         }
+        this.iSaida = this.camadas.length - 1;;
+        if (this.showLogs) console.log("Rede Inicializada")
     }
     treina() {
         for (let epoca = 0; epoca < this.epocas; epoca++) {
@@ -191,12 +201,12 @@ console.log("-----------> Binário")
 
 let desejado = [0, 1, 1, 0]
 
+let entrada = new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] });
+let oculta = new CamadaDensa({ pesos: [[0], [0], [0]] });
+let saida = new CamadaDensa({ pesos: [0] });
+
 let bp = new Backpropagation({
-    camadas: [
-        new CamadaDensa({pesos: [[-0.424, -0.740, -0.961], [0.358, -0.577, -0.469], [0.1, 0.1, 0.1]]}),
-        new CamadaDensa({pesos: [[-0.017], [-0.893], [0.148]]}),
-        new CamadaDensa({pesos: [0]})
-    ],
+    camadas: [entrada, oculta, saida],
     txaprendizagem: 0.3,
     dados: dados,
     epocas: 10000,
@@ -255,9 +265,9 @@ bp = new Backpropagation({
     txaprendizagem: 0.3,
     dados: dados,
     camadas: [
-        new CamadaDensa({pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]}),
-        new CamadaDensa({pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]}),
-        new CamadaDensa({pesos: [0, 0, 0]})
+        new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]] }),
+        new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] }),
+        new CamadaDensa({ pesos: [0, 0, 0] })
     ],
     epocas: 1000,
     showLogs: false,
