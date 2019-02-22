@@ -23,6 +23,30 @@ class Neuronio {
         this.neuronios = attrs.neuronios;
         this.parent = attrs.parent;
         this.camada = attrs.camada;
+        this.id = attrs.id;
+    }
+    get somatorio() {
+        let sum = 0;
+        if (this.parent && this.parent.length > 0) {
+            this.parent.forEach(p => {
+                sum += (p.pesos[this.id] * p.ativacao);
+            })
+            return sum;
+        } else {
+            return this.ativacao;
+        }
+    }
+    get ativacao() {
+        return this.camada == 0 ? this._ativacao : (this.sigmoide(this.somatorio))
+    }
+    set ativacao(_ativacao) {
+        this._ativacao = _ativacao;
+    }
+    sigmoide(valor) {
+        return 1 / (1 + Math.pow(Math.E, -valor))
+    }
+    derivada(valor) {
+        return valor * (1 - valor)
     }
     // set delta(_delta) {
     //     this._delta = _delta;
@@ -108,7 +132,6 @@ class Backpropagation {
     feedForward(iCamada) {
         if (!iCamada) iCamada = 1;
         if (this.camadas[iCamada]) {
-            this.camadas[iCamada] = this.multiplicacao(this.camadas[iCamada], this.camadas[iCamada - 1])
             this.feedForward(iCamada + 1)
         }
     }
@@ -150,19 +173,6 @@ class Backpropagation {
                 this.calculaDelta(desejado, iNeuronio, iCamada - 1)
             }
         }
-    }
-    multiplicacao(camada, ativacao) {
-        let vetor = []
-        for (let i = 0; i < ativacao.length; i++) {
-            for (let j = 0; j < ativacao[i].pesos.length; j++) {
-                vetor[j] = vetor[j] || 0;
-                vetor[j] += ativacao[i].pesos[j] * ativacao[i].ativacao;
-            }
-        }
-        return camada.map((v, i) => {
-            v.ativacao = this.sigmoide(vetor[i]);
-            return v
-        });
     }
     prediz(dado) {
         this.ativacaoPrimeiraCamada(dado);
