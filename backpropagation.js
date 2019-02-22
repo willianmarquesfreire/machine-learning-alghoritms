@@ -2,7 +2,61 @@ class Peso {
     constructor(neuronio, valor) {
         this.neuronio = neuronio;
         // gaussian normal
-        this.valor = valor === 0 ? Math.sqrt(-2 * Math.log(Math.random()))*Math.cos((2*Math.PI) * Math.random()) : valor;
+        this.valor = valor === 0 ? Math.sqrt(-2 * Math.log(Math.random())) * Math.cos((2 * Math.PI) * Math.random()) : valor;
+    }
+}
+
+class FuncaoAtivacao {
+    constructor(fn) {
+        this.fn = fn;
+    }
+    get(soma) {
+        return this[this.fn](soma)
+    }
+    derivada(ativacao) {
+        return this['derivada' + this.fn](ativacao)
+    }
+    step(soma) {
+        if (soma >= 1)
+            return 1
+        return 0
+    }
+    derivadastep(ativacao) {
+        return ativacao
+    }
+    sigmoid(soma) {
+        return 1 / (1 + Math.pow(Math.E, -soma))
+    }
+    derivadasigmoid(ativacao) {
+        return ativacao * (1 - ativacao)
+    }
+    tahn(soma) {
+        return (Math.exp(soma) - Math.exp(-soma)) / (Math.exp(soma) - Math.exp(-soma))
+    }
+    derivadatahn(ativacao) {
+        return ativacao
+    }
+    relu(soma) {
+        if (soma >= 0)
+            return soma
+        return 0
+    }
+    derivadarelu(ativacao) {
+        return ativacao
+    }
+    linear(soma) {
+        return soma
+    }
+    derivadalinear(ativacao) {
+        return ativacao
+    }
+    softmax(x) {
+        return x.map((value) => {
+            return Math.exp(value) / x.map((y) => Math.exp(y)).reduce((a, b) => a + b)
+        })
+    }
+    derivadasoftmax(ativacao) {
+        return ativacao
     }
 }
 
@@ -10,6 +64,7 @@ class CamadaDensa {
     constructor(attrs) {
         this.pesos = attrs.pesos;
         this.id = attrs.id;
+        this.funcaoAtivacao = attrs.funcaoAtivacao;
     }
     inicializaCamada(entrada, saida) {
         this.entrada = entrada;
@@ -24,7 +79,8 @@ class CamadaDensa {
                 delta: 0,
                 pesos: this.pesos[j],
                 camada: this.id,
-                id: j
+                id: j,
+                funcaoAtivacao: this.funcaoAtivacao
             });
             this.neuronios = this.neuronios || [];
             if (this.saida) {
@@ -32,7 +88,7 @@ class CamadaDensa {
                     neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
                         this.saida.neuronios[iPeso].parent = this.saida.neuronios[iPeso].parent || [];
                         this.saida.neuronios[iPeso].parent.push(neuronio)
-                        return new Peso(this.saida.neuronios[iPeso], peso);
+                        return new Peso(this.saida.neuronios[iPeso], peso, );
                     })
                 }
             }
@@ -47,6 +103,7 @@ class Neuronio {
         this.ativacao = attrs.ativacao;
         this.pesos = attrs.pesos;
         this.parent = attrs.parent;
+        this.funcaoAtivacao = attrs.funcaoAtivacao;
         this.camada = attrs.camada;
         this.id = attrs.id;
     }
@@ -56,23 +113,19 @@ class Neuronio {
             this.parent.forEach(p => {
                 sum += (p.pesos[this.id].valor * p.ativacao);
             })
-            if (Number.isNaN(sum)) debugger
             return sum;
         } else {
             return this._ativacao;
         }
     }
     get ativacao() {
-        return this.camada == 0 ? this._ativacao : (this.sigmoide(this.somatorio))
+        return this.camada == 0 ? this._ativacao : this.funcaoAtivacao.get(this.somatorio)
     }
     set ativacao(_ativacao) {
         this._ativacao = _ativacao;
     }
-    sigmoide(valor) {
-        return 1 / (1 + Math.pow(Math.E, -valor))
-    }
     derivada() {
-        return this.ativacao * (1 - this.ativacao)
+        return this.funcaoAtivacao.derivada(this.ativacao)
     }
     set delta(_delta) {
         this._delta = _delta;
@@ -83,10 +136,8 @@ class Neuronio {
             this.pesos.forEach((peso, i) => {
                 soma += peso.valor * peso.neuronio.delta;
             });
-            if (Number.isNaN(soma * this.derivada())) debugger
             return soma * this.derivada();
         } else {
-            if (Number.isNaN(this.erro * this.derivada())) debugger
             return this.erro * this.derivada()
         }
     }
@@ -189,6 +240,8 @@ module.exports = {
     Neuronio: Neuronio
 }
 
+let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
+
 let dados = [
     [0, 0, 1],
     [0, 1, 1],
@@ -201,9 +254,9 @@ console.log("-----------> Binário")
 
 let desejado = [0, 1, 1, 0]
 
-let entrada = new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] });
-let oculta = new CamadaDensa({ pesos: [[0], [0], [0]] });
-let saida = new CamadaDensa({ pesos: [0] });
+let entrada = new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], funcaoAtivacao: funcaoAtivacao});
+let oculta = new CamadaDensa({ pesos: [[0], [0], [0]], funcaoAtivacao: funcaoAtivacao});
+let saida = new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao});
 
 let bp = new Backpropagation({
     camadas: [entrada, oculta, saida],
@@ -265,9 +318,9 @@ bp = new Backpropagation({
     txaprendizagem: 0.3,
     dados: dados,
     camadas: [
-        new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]] }),
-        new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]] }),
-        new CamadaDensa({ pesos: [0, 0, 0] })
+        new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]], funcaoAtivacao: funcaoAtivacao}),
+        new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], funcaoAtivacao: funcaoAtivacao}),
+        new CamadaDensa({ pesos: [0, 0, 0], funcaoAtivacao: funcaoAtivacao})
     ],
     epocas: 1000,
     showLogs: false,
