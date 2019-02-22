@@ -21,6 +21,8 @@ class Neuronio {
         this.ativacao = attrs.ativacao;
         this.pesos = attrs.pesos;
         this.neuronios = attrs.neuronios;
+        this.parent = attrs.parent;
+        this.camada = attrs.camada;
     }
     // set delta(_delta) {
     //     this._delta = _delta;
@@ -41,17 +43,21 @@ class Backpropagation {
         this.camadas = this.inicializaVetor(this.pesosIniciais);
         this.camadas.forEach((camada, iCamada) => {
             camada.forEach((neuronio, iNeuronio) => {
-                neuronio.id = iCamada + "-" + iNeuronio
+                neuronio.id = iNeuronio
+                neuronio.camada = iCamada;
                 if (neuronio.pesos) {
                     neuronio.neuronios = neuronio.neuronios || [];
                     neuronio.pesos.forEach((peso, iPeso) => {
                         if (this.camadas[iCamada + 1]) {
                             neuronio.neuronios.push(this.camadas[iCamada + 1][iPeso])
+                            this.camadas[iCamada + 1][iPeso].parent = this.camadas[iCamada + 1][iPeso].parent || [];
+                            this.camadas[iCamada + 1][iPeso].parent.push(neuronio)
                         }
                     })
                 }
             })
         })
+        console.log("Rede Inicializada")
     }
     inicializaVetor(pesos) {
         let array = [];
