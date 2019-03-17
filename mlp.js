@@ -99,6 +99,20 @@ class CamadaDensa {
     constructor(attrs) {
         this.pesos = attrs.pesos;
         this.id = attrs.id;
+        if (!this.pesos) {
+            this.pesos = [];
+            for (let i = 0; i < attrs.qtdEntrada; i++) {
+                if (attrs.qtdSaida > 0) {
+                    let peso = [];
+                    for (let j = 0; j < attrs.qtdSaida; j++) {
+                        peso.push(0);
+                    }
+                    this.pesos.push(peso);
+                } else {
+                    this.pesos.push(0);
+                }
+            }
+        }
         this.funcaoAtivacao = attrs.funcaoAtivacao;
     }
     inicializaCamada(entrada, saida) {
