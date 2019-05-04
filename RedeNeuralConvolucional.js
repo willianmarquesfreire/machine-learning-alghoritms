@@ -1,4 +1,5 @@
 let m = require("./mlp");
+let ma = require("./mlpMatriz");
 let MLP = m.MLP;
 let Neuronio = m.Neuronio;
 let FuncaoAtivacao = m.FuncaoAtivacao;
@@ -214,37 +215,44 @@ class Imagem {
 
 }
 
+let dados = [
 
-let img = new Imagem("./rhino.png");
-img.open(result => {
+];
 
-    let dados = [
-        result.convolutional().maxPooling().flattening()
-    ];
+let desejado = [
+]
 
-    let desejado = [
-        [0]
-    ]
+let baseDados = [1, 2]
+for (let id = 0; id < 2; id++) {
+    let img = new Imagem((id + 1) + ".png");
+    img.open(result => {
+        dados.push(result.flattening())
+        desejado.push(id)
+        console.log(dados[0].length)
+    })
+}
 
-    let funcaoAtivacao = new FuncaoAtivacao('relu');
-
-    let bp = new MLP({
+setTimeout(function () {
+    console.log("oi",dados.length)
+    let bp = new ma.Backpropagation({
         txaprendizagem: 0.3,
         dados: dados,
-        camadas: [
-            new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
-            new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
-            new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
-        ],
-        epocas: 1,
-        showLogs: true,
+        ativacao: 'sigmoide',
+        epocas: 10,
         desejado: desejado
     });
-
     bp.treina();
+}, 4000)
 
-    dados.forEach((dado, i) => {
-        let obt = bp.prediz(dado);
-        console.log("Esperado: " + desejado[i].reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) + ", Obtido: " + obt.maxIndex)
-    })
-})
+
+
+
+// img = new Imagem("./2.png");
+// img.open(result => {
+//     dados.push(result.flattening())
+//     bp.dados = dados;
+//     bp.desejado = desejado;
+//     console.log(dados[0].length)
+//     desejado.push([1])
+//     bp.treina();
+// })
