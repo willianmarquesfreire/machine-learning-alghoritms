@@ -1,11 +1,11 @@
 let m = require("./mlp");
-let ma = require("./mlpMatriz");
 let MLP = m.MLP;
 let Neuronio = m.Neuronio;
 let FuncaoAtivacao = m.FuncaoAtivacao;
 let CamadaDensa = m.CamadaDensa;
 
 /*
+https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53
     obs: A Imagem é uma matriz e o Kernel é outra matriz
     Etapas:
     - Operador de convolução(Processo de adicionar 
@@ -101,112 +101,64 @@ class Imagem {
         let pos = this.adjacenciaPos(x, y, level);
         return pos.map(p => this.getRGBA(p));
     }
-    detectorRGB(kernel) {
-        let featureMapImageData = [];
-        for (let y = 1; y < this.height - 1; y++) {
-            for (let x = 1; x < this.width - 1; x++) {
-                let sum = [0, 0, 0, 0];
-                this.adjacencia(x, y, 1).forEach((ad, index) => {
-                    sum[0] += ad[0] * kernel[index];
-                    sum[1] += ad[1] * kernel[index];
-                    sum[2] += ad[2] * kernel[index];
-                    sum[3] += ad[3] * kernel[index];
-                });
-                let rgba = this.getRGBA(this.get(x, y));
-
-                let relu1 = Math.round(sum[0] + (rgba[0] * kernel[0]));
-                let relu2 = Math.round(sum[1] + (rgba[1] * kernel[1]));
-                let relu3 = Math.round(sum[2] + (rgba[2] * kernel[2]));
-                let relu4 = Math.round(sum[3] + (rgba[3] * kernel[3]));
-
-                featureMapImageData.push(relu1 >= 0 ? relu1 : 0);
-                featureMapImageData.push(relu2 >= 0 ? relu2 : 0);
-                featureMapImageData.push(relu3 >= 0 ? relu3 : 0);
-                featureMapImageData.push(relu4 >= 0 ? relu4 : 0);
-
+    convolutionalRGB() {
+        let r = [
+            -1, -1, 1,
+            0, 1, -1,
+            0, 1, 1
+        ]
+        let g = [
+            1, 0, 0,
+            1, -1, -1,
+            1, 0, -1
+        ]
+        let b = [
+            0, 1, 1,
+            0, 1, 0,
+            1, -1, 1
+        ]
+        let novaMatriz = [];
+        for (let x = 1; x < this.width - 1; x++) {
+            for (let y = 1; y < this.height - 1; y++) {
+                let adj = this.adjacencia(x, y, 1);
+                let somaR = 0;
+                let somaG = 0;
+                let somaB = 0;
+                for (let z = 0; z < adj.length; z++) {
+                    somaR += adj[z][0] * r[z];
+                    somaG += adj[z][1] * r[z];
+                    somaB += adj[z][2] * r[z];
+                }
+                novaMatriz.push(somaR + somaG + somaB + 1);
             }
         }
-        this.imageData = featureMapImageData;
-        this.width = this.width - 2;
-        this.height = this.height - 2;
-        return this;
-    }
-    featureDetectorRGB() {
-        return this.detectorRGB([0, 0.2, 0, 0.2, 0, 0.2, 0, 0.2]);
-    }
-    maxPoolingRGB() {
-        let mine = [];
-        for (let y = 1; y < this.height - 1; y++) {
-            for (let x = 1; x < this.width - 1; x++) {
-                let sum = [0, 0, 0, 0];
-                this.adjacencia(x, y, 1).forEach((ad, index) => {
-                    if (ad[0] > sum[0]) sum[0] = ad[0];
-                    if (ad[1] > sum[1]) sum[1] = ad[1];
-                    if (ad[2] > sum[2]) sum[2] = ad[2];
-                    if (ad[3] > sum[3]) sum[3] = ad[3];
-                });
-
-                let rgba = this.getRGBA(this.get(x, y));
-                if (rgba[0] > sum[0]) sum[0] = rgba[0];
-                if (rgba[1] > sum[1]) sum[1] = rgba[1];
-                if (rgba[2] > sum[2]) sum[2] = rgba[2];
-                if (rgba[3] > sum[3]) sum[3] = rgba[3];
-
-                mine.push(sum[0]);
-                mine.push(sum[1]);
-                mine.push(sum[2]);
-                mine.push(sum[3]);
-
-            }
-        }
-        this.imageData = mine;
-        this.width = this.width - 2;
-        this.height = this.height - 2;
-        return this;
-    }
-    convolutional() {
-        let r = [-1, -1, 1, -1, 1, 1, 0, 0, 1];
-        let g = [1, 0, 0, -1, -1, 0, 1, 1, -1];
-        let b = [0, 1, 1, 0, 1, -1, 1, 0, 1];
-
-        let featureMap = [];
-        for (let y = 1; y < this.height - 1; y++) {
-            for (let x = 1; x < this.width - 1; x++) {
-                let sum = [0, 0, 0, 0];
-                this.adjacencia(x, y, 1).forEach((ad, index) => {
-                    sum[0] += ad[0] * r[index];
-                    sum[1] += ad[1] * g[index];
-                    sum[2] += ad[2] * b[index];
-                });
-                let rgba = this.getRGBA(this.get(x, y));
-
-                let relu1 = Math.round(sum[0] + (rgba[0] * r[0]));
-                let relu2 = Math.round(sum[1] + (rgba[1] * g[1]));
-                let relu3 = Math.round(sum[2] + (rgba[2] * b[2]));
-
-                let relu = relu1 + relu2 + relu3 + 1;
-
-                featureMap.push(relu >= 0 ? relu : 0);
-            }
-        }
-        this.imageData = featureMap;
-        this.width = Math.round(this.width - 2);
-        this.height = Math.round(this.height - 2);
+        this.imageData = novaMatriz;
+        this.width = Math.sqrt(this.imageData.length);
+        this.height = Math.sqrt(this.imageData.length);
         return this;
     }
     maxPooling() {
-        let mine = [];
-        for (let x = 0; x < this.imageData.length; x += 2) {
-            let maior = 0;
-            if (this.imageData[x] && this.imageData[x] > maior) maior = this.imageData[x];
-            if (this.imageData[x + 1] && this.imageData[x + 1] > maior) maior = this.imageData[x + 1];
-            if (this.imageData[x + this.width] && this.imageData[x + this.width] > maior) maior = this.imageData[x + this.width]
-            if (this.imageData[x + this.width + 1] && this.imageData[x + this.width + 1] > maior) maior = this.imageData[x + this.width + 1];
-            mine.push(maior);
+        let novaMatriz = [];
+        for (let y = 0; y < this.height - 1; y += 2) {
+            for (let x = 0; x < this.width - 1; x += 2) {
+                let maior = Number.MIN_SAFE_INTEGER;
+                // console.log((y * this.width) + x, ((y * this.width) + x + this.height))
+                let adj0 = this.imageData[(y * this.width) + x];
+                let adj1 = this.imageData[(y * this.width) + x + 1];
+                let adj2 = this.imageData[((y * this.width) + x + this.height)];
+                let adj3 = this.imageData[((y * this.width) + x + this.height) + 1];
+                // console.log(adj0, adj1, adj2, adj3)
+                if (adj0 > maior) maior = adj0;
+                if (adj1 > maior) maior = adj1;
+                if (adj2 > maior) maior = adj2;
+                if (adj3 > maior) maior = adj3;
+
+                novaMatriz.push(maior)
+            }
         }
-        this.imageData = mine;
-        this.width = this.width - 2;
-        this.height = this.height - 2;
+        this.imageData = novaMatriz;
+        this.width = Math.sqrt(this.imageData.length);
+        this.height = Math.sqrt(this.imageData.length);
         return this;
     }
     flattening() {
@@ -215,44 +167,41 @@ class Imagem {
 
 }
 
-let dados = [
+let img = new Imagem("./rhino.png");
+img.open(result => {
 
-];
+    let dados = [
+        result.convolutionalRGB().maxPooling().maxPooling().maxPooling().flattening()
+    ];
 
-let desejado = [
-]
+    let desejado = [
+        [0]
+    ]
 
-let baseDados = [1, 2]
-for (let id = 0; id < 2; id++) {
-    let img = new Imagem((id + 1) + ".png");
-    img.open(result => {
-        dados.push(result.flattening())
-        desejado.push(id)
-        console.log(dados[0].length)
-    })
-}
+    result.saveDataURL()
 
-setTimeout(function () {
-    console.log("oi",dados.length)
-    let bp = new ma.Backpropagation({
+    // console.log(dados[0])
+    console.log("===>", result.imageData.length)
+
+    let funcaoAtivacao = new FuncaoAtivacao('relu');
+
+    let bp = new MLP({
         txaprendizagem: 0.3,
         dados: dados,
-        ativacao: 'sigmoide',
+        camadas: [
+            new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
+            new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
+            new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
+        ],
         epocas: 10,
+        showLogs: true,
         desejado: desejado
     });
+
     bp.treina();
-}, 4000)
 
-
-
-
-// img = new Imagem("./2.png");
-// img.open(result => {
-//     dados.push(result.flattening())
-//     bp.dados = dados;
-//     bp.desejado = desejado;
-//     console.log(dados[0].length)
-//     desejado.push([1])
-//     bp.treina();
-// })
+    dados.forEach((dado, i) => {
+        let obt = bp.prediz(dado);
+        console.log("Esperado: " + desejado[i].reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) + ", Obtido: " + obt.maxIndex)
+    })
+})
