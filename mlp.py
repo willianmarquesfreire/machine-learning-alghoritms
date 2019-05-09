@@ -1,21 +1,21 @@
 import copy
 import math
 
-dados = [
-    [0, 1, 1]
-]
+# dados = [
+#     [0, 1, 1]
+# ]
 
-desejado = [[1, 0]]
+# desejado = [[1, 0]]
 
-pesos = [
-    [[-1, 0], [0, 1], [1, 1]],
-    [[1, -1], [0, 1], [1, 1]],
-    [0, 0]
-]
+# pesos = [
+#     [[-1, 0], [0, 1], [1, 1]],
+#     [[1, -1], [0, 1], [1, 1]],
+#     [0, 0]
+# ]
 
 
 class MLP:
-    def __init__(self, txAprendizagem=0.1, pesos=None, dados=None, epocas=1, desejado=None, momento=0.2):
+    def __init__(self, txAprendizagem=0.3, pesos=None, dados=None, epocas=1, desejado=None, momento=0.2):
         self.txAprendizagem = txAprendizagem
         self.pesos = pesos
         self.ativacao = self.zeraLista(copy.deepcopy(pesos))
@@ -50,24 +50,22 @@ class MLP:
         return lista
 
     def sigmoid(self, valor):
-        return valor
-        # return 1 / (1 + math.pow(math.e, -valor))
+        # return valor
+        return 1 / (1 + math.pow(math.e, -valor))
 
     def derivada(self, valor):
-        return valor
-        # return valor * (1 - valor)
+        # return 1
+        return valor * (1 - valor)
 
     def multiplicacao(self, original, ativacao, pesos):
         vetor = self.zeraListaRecursiva(copy.deepcopy(original))
         for i, p in enumerate(pesos):
-            for j in vetor:
+            for j in range(len(vetor)):
                 try:
                     vetor[j] += p[j] * ativacao[i]
                 except:
                     vetor[j] = 1
                 
-
-        print(vetor)
         return [self.sigmoid(v) for v in vetor]
 
     def feedForward(self, dado):
@@ -80,26 +78,28 @@ class MLP:
         for iCamada in reversed(range(iCamadas + 1)):
             for iNeuronio in range(len(self.delta[iCamada])):
                 if iCamada == self.iSaida:
-                    self.delta[iCamada][iNeuronio] = (
-                        desejado[iNeuronio] - self.ativacao[iCamada][iNeuronio]) * self.derivada(self.ativacao[iCamada][iNeuronio])
+                    self.delta[iCamada][iNeuronio] = (desejado[iNeuronio] - self.ativacao[iCamada][iNeuronio]) * self.derivada(self.ativacao[iCamada][iNeuronio])
+                    # print(desejado[iNeuronio], self.ativacao[iCamada][iNeuronio])
                 elif iCamada > 0:
                     soma = 0
                     for iNeuronioNext, neuronioNext in enumerate(self.delta[iCamada+1]):
+                        print(neuronioNext, self.pesos[iCamada][iNeuronio][iNeuronioNext])
                         soma += neuronioNext * \
                             self.pesos[iCamada][iNeuronio][iNeuronioNext]
+                            
                     self.delta[iCamada][iNeuronio] = self.derivada(
                         self.ativacao[iCamada][iNeuronio]) * soma
-                    # print(self.delta[iCamada][iNeuronio])
 
     def ajustaPesos(self, dado, desejado):
-        # print(self.delta)
         for iCamada in range(self.iSaida):
             for i in range(len(self.ativacao[iCamada])):
                 for j in range(len(self.pesos[iCamada][i])):
+                    # print(iCamada, "--", self.pesos[iCamada][i][j], self.txAprendizagem, self.delta[iCamada + 1][j], self.ativacao[iCamada][i])
                     self.pesos[iCamada][i][j] += self.txAprendizagem * \
-                        self.delta[iCamada][i] * self.ativacao[iCamada+1][j]
+                        self.delta[iCamada+1][j] * self.ativacao[iCamada][i]
+                    # print(self.pesos[iCamada][i][j])
 
-        print("ajusta pesos")
+        # print("ajusta pesos")
 
     def feedBackward(self, dado, desejado):
         self.calculaDelta(dado, desejado)
@@ -126,12 +126,27 @@ class MLP:
         self.feedForward(dado)
         return self.ativacao[self.iSaida]
 
+dados = [
+    [0, 0, 1],
+    [0, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1]
+]
+
+desejado = [0, 1, 1, 0]
+
+pesos = [
+    [[-0.424, -0.740, -0.961], [0.358, -0.577, -0.469], [0.1, 0.1, 0.1]],
+    [[-0.017], [-0.893], [0.148]],
+    [0]
+]
+
 
 mlp = MLP(
     pesos=pesos,
     dados=dados,
     desejado=desejado,
-    epocas=1
+    epocas=2
 )
 
 mlp.treina()
@@ -139,3 +154,61 @@ mlp.treina()
 for dado in dados:
     print("--------", dado)
     print(mlp.prediz(dado))
+
+# print("---> Multiclasse")
+
+# dados = [
+#     [0, 0, 0, 0, 1],
+#     [0, 0, 1, 1, 1],
+#     [0, 1, 0, 1, 1],
+#     [0, 1, 1, 1, 1],
+#     [1, 0, 0, 0, 1],
+#     [1, 0, 0, 0, 1],
+#     [1, 0, 0, 1, 1],
+#     [1, 1, 0, 0, 1],
+#     [1, 1, 1, 1, 1],
+#     [2, 0, 0, 1, 1],
+#     [2, 0, 1, 1, 1],
+#     [2, 0, 1, 1, 1],
+#     [2, 0, 0, 0, 1],
+#     [2, 1, 1, 1, 1],
+#     [2, 1, 0, 1, 1],
+# ]
+
+# desejado = [
+#     [1, 0, 0],
+#     [0, 1, 0],
+#     [0, 1, 0],
+#     [0, 0, 1],
+#     [0, 1, 0],
+#     [1, 0, 0],
+#     [0, 0, 1],
+#     [0, 1, 0],
+#     [0, 0, 1],
+#     [0, 1, 0],
+#     [0, 0, 1],
+#     [0, 1, 0],
+#     [1, 0, 0],
+#     [0, 1, 0],
+#     [0, 1, 0]
+# ]
+
+# pesos = [
+#     [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+#     [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+#     [0, 0, 0] 
+# ]
+
+# mlp = MLP(
+#     pesos=pesos,
+#     dados=dados,
+#     desejado=desejado,
+#     epocas=2000
+# )
+
+# mlp.treina()
+
+# for i, dado in enumerate(dados):
+#     print("--------", dado)
+#     print("Esperado: ", desejado[i])
+#     print(mlp.prediz(dado))
