@@ -169,11 +169,11 @@ class Imagem {
 }
 
 
-function treina(dados, desejado) {
-    console.log(dados.length, desejado)
-    console.log(dados[0].length, desejado)
-
+function treina(dados, desejado, dadosTeste, desejadoTeste) {
     let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
+    dados = dados.concat(dadosTeste);
+    desejado = desejado.concat(desejadoTeste)
+    console.log(dados.length, desejado)
 
     let bp = new MLP({
         txaprendizagem: 0.3,
@@ -183,76 +183,45 @@ function treina(dados, desejado) {
             new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
             new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
         ],
-        epocas: 200,
+        epocas: 1000,
         showLogs: true,
         desejado: desejado
     });
 
     bp.treina();
-
+    console.log("===> Treino")
     dados.forEach((dado, i) => {
         let obt = bp.prediz(dado);
         console.log(desejado[i])
         console.log("Esperado: " + desejado[i], "Obtido: " + bp.prediz(dado).maxValue)
+    })
+    
+    console.log("===> Teste")
+    dadosTeste.forEach((dado, i) => {
+        let obt = bp.prediz(dado);
+        console.log(desejadoTeste[i])
+        console.log("Esperado: " + desejadoTeste[i], "Obtido: " + bp.prediz(dado).maxValue)
     })
 }
 
 fs.readdir("cnn", (err, files) => {
     let dados = [];
     let desejado = [];
+    let dadosTeste = [];
+    let desejadoTeste = [];
     files.forEach((file, iFile) => {
         let img = new Imagem("cnn/" + file);
         img.open(result => {
-            dados.push(result.convolutionalRGB().maxPooling().maxPooling().maxPooling().flattening());
-            desejado.push(file.includes("cachorro") ? 0 : 1);
-            if (dados.length == files.length) {
-                treina(dados, desejado)
+            if (file.includes("teste")) {
+                dadosTeste.push(result.convolutionalRGB().maxPooling().maxPooling().maxPooling().flattening());
+                desejadoTeste.push(file.includes("cachorro") ? 0 : 1)
+            } else {
+                dados.push(result.convolutionalRGB().maxPooling().maxPooling().maxPooling().flattening());
+                desejado.push(file.includes("cachorro") ? 0 : 1)
+            }
+            if (desejado.length + desejadoTeste.length == files.length) {
+                treina(dados, desejado, dadosTeste, desejadoTeste)
             }
         });
     });
 });
-
-// let img = new Imagem("./1.png");
-// img.open(result => {
-//     let img2 = new Imagem("./2.png");
-//     img2.open(result2 => {
-
-        // let dados = [
-        //     result.convolutionalRGB().maxPooling().flattening(),
-        //     result2.convolutionalRGB().maxPooling().flattening()
-        // ];
-
-        // let desejado = [
-        //     0,
-        //     1
-        // ]
-
-        // let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
-
-        // let bp = new MLP({
-        //     txaprendizagem: 0.3,
-        //     dados: dados,
-        //     camadas: [
-        //         new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
-        //         new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
-        //         new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
-        //     ],
-        //     epocas: 200,
-        //     showLogs: true,
-        //     desejado: desejado
-        // });
-
-        // bp.treina();
-
-        // dados.forEach((dado, i) => {
-        //     let obt = bp.prediz(dado);
-        //     console.log(desejado[i])
-        //     console.log("Esperado: " + desejado[i], "Obtido: " + bp.prediz(dado).maxValue)
-        // })
-
-
-//     })
-
-// })
-
-
