@@ -43,7 +43,7 @@ class FuncaoAtivacao {
     derivadatahn(ativacao) {
         return 1 - Math.pow(ativacao, 2)
     }
-    logistica(soma)  {
+    logistica(soma) {
         return 1 / (1 + Math.exp(-soma)) // == sigmoide
     }
     derivadalogistica(ativacao) {
@@ -137,7 +137,7 @@ class CamadaDensa {
                     neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
                         this.saida.neuronios[iPeso].parent = this.saida.neuronios[iPeso].parent || [];
                         this.saida.neuronios[iPeso].parent.push(neuronio)
-                        return new Peso(this.saida.neuronios[iPeso], peso, );
+                        return new Peso(this.saida.neuronios[iPeso], peso);
                     })
                 }
             }
@@ -159,7 +159,7 @@ class Neuronio {
     get somatorio() {
         let sum = 0;
         if (this.parent && this.parent.length > 0) {
-            this.parent.forEach(p => {
+            this.parent.forEach(async (p) => {
                 sum += (p.pesos[this.id].valor * p.ativacao);
             })
             return sum;
@@ -168,13 +168,15 @@ class Neuronio {
         }
     }
     get ativacao() {
-        return this.camada == 0 ? this._ativacao : this.funcaoAtivacao.get(this.somatorio)
+        this._ativacao = this.camada == 0 ? this._ativacao : this.funcaoAtivacao.get(this.somatorio)
+        return this._ativacao
     }
     set ativacao(_ativacao) {
         this._ativacao = _ativacao;
     }
     derivada() {
-        return this.funcaoAtivacao.derivada(this.ativacao)
+        // return this.funcaoAtivacao.derivada(this.ativacao) //Tem mais acerto, mas é mais pesado
+        return this.funcaoAtivacao.derivada(this._ativacao)
     }
     set delta(_delta) {
         this._delta = _delta;
@@ -182,7 +184,7 @@ class Neuronio {
     get delta() {
         if (this.pesos && this.pesos instanceof Array) {
             let soma = 0;
-            this.pesos.forEach((peso, i) => {
+            this.pesos.forEach(async (peso, i) => {
                 soma += peso.valor * peso.neuronio.delta;
             });
             return soma * this.derivada();
@@ -229,7 +231,7 @@ class MLP {
     }
     mse() {
         let sum = 0;
-        this.desejado.forEach((dado, index) => {
+        this.desejado.forEach(async (dado, index) => {
             sum += Math.pow(this.minus(this.previsto[index], dado), 2)
         })
         return sum / this.desejado.length;
@@ -239,7 +241,7 @@ class MLP {
     }
     minus(vetor1, vetor2) {
         let res = 0;
-        vetor1.forEach((v, i) => {
+        vetor1.forEach(async (v, i) => {
             res += v - vetor2[i]
         })
         return res;
@@ -261,14 +263,18 @@ class MLP {
     calculaErro(desejado, iNeuronio, iCamada) {
         this.camadas[iCamada].neuronios[iNeuronio].erro = desejado - this.camadas[iCamada].neuronios[iNeuronio].ativacao;
     }
-    atualizaPesos(iNeuronio, iCamada) {
+    async ajustaPeso(iCamada, i, j) {
+        this.camadas[iCamada - 1].neuronios[i].pesos[j].valor += this.txaprendizagem
+            * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
+    }
+    async atualizaPesos(iNeuronio, iCamada) {
+        // console.log("Ajusta Pesos", iCamada, iNeuronio)
         if (this.camadas[iCamada - 1]) {
-            for (let i = 0; i < this.camadas[iCamada - 1].neuronios.length; i++) {
-                for (let j = 0; j < this.camadas[iCamada - 1].pesos[i].length; j++) {
-                    this.camadas[iCamada - 1].neuronios[i].pesos[j].valor += this.txaprendizagem
-                    * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
-                }
-            }
+            this.camadas[iCamada - 1].neuronios.forEach(async (p1, i) => {
+                this.camadas[iCamada - 1].pesos[i].forEach(async (p2, j) => {
+                    this.ajustaPeso(iCamada, i, j)
+                })
+            })
             this.atualizaPesos(iNeuronio, iCamada - 1)
         }
     }

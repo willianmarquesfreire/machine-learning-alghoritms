@@ -3,6 +3,7 @@ let MLP = m.MLP;
 let Neuronio = m.Neuronio;
 let FuncaoAtivacao = m.FuncaoAtivacao;
 let CamadaDensa = m.CamadaDensa;
+const fs = require('fs');
 
 /*
 https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53
@@ -167,54 +168,91 @@ class Imagem {
 
 }
 
-let img = new Imagem("./1.png");
-img.open(result => {
-    let img2 = new Imagem("./2.png");
-    img2.open(result2 => {
 
-        let dados = [
-            result.convolutionalRGB().maxPooling().flattening(),
-            result2.convolutionalRGB().maxPooling().flattening()
-        ];
-        
-        let desejado = [
-            0,
-            1
-        ]
-        
-        
+function treina(dados, desejado) {
+    console.log(dados.length, desejado)
+    console.log(dados[0].length, desejado)
 
-        // result.saveDataURL()
+    let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
 
-        // console.log(dados[0])
-        // console.log("===>", result.imageData.length)
+    let bp = new MLP({
+        txaprendizagem: 0.3,
+        dados: dados,
+        camadas: [
+            new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
+            new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
+            new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
+        ],
+        epocas: 200,
+        showLogs: true,
+        desejado: desejado
+    });
 
-        let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
+    bp.treina();
 
-        let bp = new MLP({
-            txaprendizagem: 0.3,
-            dados: dados,
-            camadas: [
-                new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
-                new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
-                new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
-            ],
-            epocas: 200,
-            showLogs: true,
-            desejado: desejado
-        });
-
-        bp.treina();
-
-        dados.forEach((dado, i) => {
-            let obt = bp.prediz(dado);
-            console.log(desejado[i])
-            console.log("Esperado: " + desejado[i], "Obtido: " + bp.prediz(dado).maxValue)
-        })
-
-
+    dados.forEach((dado, i) => {
+        let obt = bp.prediz(dado);
+        console.log(desejado[i])
+        console.log("Esperado: " + desejado[i], "Obtido: " + bp.prediz(dado).maxValue)
     })
+}
 
-})
+fs.readdir("cnn", (err, files) => {
+    let dados = [];
+    let desejado = [];
+    files.forEach((file, iFile) => {
+        let img = new Imagem("cnn/" + file);
+        img.open(result => {
+            dados.push(result.convolutionalRGB().maxPooling().maxPooling().maxPooling().flattening());
+            desejado.push(file.includes("cachorro") ? 0 : 1);
+            if (dados.length == files.length) {
+                treina(dados, desejado)
+            }
+        });
+    });
+});
+
+// let img = new Imagem("./1.png");
+// img.open(result => {
+//     let img2 = new Imagem("./2.png");
+//     img2.open(result2 => {
+
+        // let dados = [
+        //     result.convolutionalRGB().maxPooling().flattening(),
+        //     result2.convolutionalRGB().maxPooling().flattening()
+        // ];
+
+        // let desejado = [
+        //     0,
+        //     1
+        // ]
+
+        // let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
+
+        // let bp = new MLP({
+        //     txaprendizagem: 0.3,
+        //     dados: dados,
+        //     camadas: [
+        //         new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
+        //         new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
+        //         new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
+        //     ],
+        //     epocas: 200,
+        //     showLogs: true,
+        //     desejado: desejado
+        // });
+
+        // bp.treina();
+
+        // dados.forEach((dado, i) => {
+        //     let obt = bp.prediz(dado);
+        //     console.log(desejado[i])
+        //     console.log("Esperado: " + desejado[i], "Obtido: " + bp.prediz(dado).maxValue)
+        // })
+
+
+//     })
+
+// })
 
 
