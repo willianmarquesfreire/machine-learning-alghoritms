@@ -56,14 +56,10 @@ class FuncaoAtivacao {
         return 1 / (1 + Math.pow(ativacao, 2))
     }
     relu(soma) {
-        if (soma >= 0)
-            return soma
-        return 0
+        return Math.max(0, soma)
     }
     derivadarelu(ativacao) {
-        if (ativacao >= 0)
-            return 1
-        return 0
+        return ativacao > 0 ? 1 : 0;
     }
     leakyrelu(soma) {
         if (soma >= 0)
@@ -86,12 +82,35 @@ class FuncaoAtivacao {
         return Math.random() * 0.1
     }
     softmax(x) {
-        return x.map((value) => {
-            return Math.exp(value) / x.map((y) => Math.exp(y)).reduce((a, b) => a + b)
-        })
+        /* expect a vector instead of single input */
+        if (!(x instanceof Array))
+            return null;
+
+        let sum = 0;
+        for (let i = 0; i < x; i++) {
+            sum += Math.exp(x[i]);
+        }
+        for (let i = 0; i < x; i++) {
+            x[i] = Math.exp(x) / sum;
+        }
+        return x;
     }
-    derivadasoftmax(ativacao) {
-        return 1 / (1 + Math.exp(-ativacao))
+
+    dSoftmax(labels, x) {
+        /* expect a vectors instead of single inputs */
+        if (!(x instanceof Array))
+            return null;
+
+        for (let i = 0; i < x.length; i++) {
+            x[i] = labels[i] - x;
+        }
+        return x;
+    }
+    softplus(x) {
+        // TODO
+    }
+    derivadasoftplus(ativacao) {
+        // TODO
     }
 }
 
@@ -265,7 +284,7 @@ class MLP {
     }
     async ajustaPeso(iCamada, i, j) {
         this.camadas[iCamada - 1].neuronios[i].pesos[j].valor += this.txaprendizagem
-            * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
+        * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
     }
     async atualizaPesos(iNeuronio, iCamada) {
         // console.log("Ajusta Pesos", iCamada, iNeuronio)

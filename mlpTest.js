@@ -27,7 +27,7 @@ let bp = new MLP({
     camadas: [entrada, oculta, saida],
     txaprendizagem: 0.3,
     dados: dados,
-    epocas: 26000,
+    epocas: 2000,
     showLogs: false,
     desejado: desejado
 });
@@ -86,7 +86,7 @@ bp = new MLP({
         new CamadaDensa({ pesos: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], funcaoAtivacao: funcaoAtivacao}),
         new CamadaDensa({ pesos: [0, 0, 0], funcaoAtivacao: funcaoAtivacao})
     ],
-    epocas: 5000,
+    epocas: 2000,
     showLogs: false,
     desejado: desejado
 });
