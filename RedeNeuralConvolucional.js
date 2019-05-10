@@ -167,41 +167,54 @@ class Imagem {
 
 }
 
-let img = new Imagem("./rhino.png");
+let img = new Imagem("./1.png");
 img.open(result => {
+    let img2 = new Imagem("./2.png");
+    img2.open(result2 => {
 
-    let dados = [
-        result.convolutionalRGB().maxPooling().maxPooling().maxPooling().flattening()
-    ];
+        let dados = [
+            result.convolutionalRGB().maxPooling().flattening(),
+            result2.convolutionalRGB().maxPooling().flattening()
+        ];
+        
+        let desejado = [
+            0,
+            1
+        ]
+        
+        
 
-    let desejado = [
-        [0]
-    ]
+        // result.saveDataURL()
 
-    result.saveDataURL()
+        // console.log(dados[0])
+        // console.log("===>", result.imageData.length)
 
-    // console.log(dados[0])
-    console.log("===>", result.imageData.length)
+        let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
 
-    let funcaoAtivacao = new FuncaoAtivacao('relu');
+        let bp = new MLP({
+            txaprendizagem: 0.3,
+            dados: dados,
+            camadas: [
+                new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
+                new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
+                new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
+            ],
+            epocas: 200,
+            showLogs: true,
+            desejado: desejado
+        });
 
-    let bp = new MLP({
-        txaprendizagem: 0.3,
-        dados: dados,
-        camadas: [
-            new CamadaDensa({ qtdEntrada: dados[0].length, qtdSaida: Math.round(dados[0].length / 2), funcaoAtivacao: funcaoAtivacao }),
-            new CamadaDensa({ qtdEntrada: Math.round(dados[0].length / 2), qtdSaida: 1, funcaoAtivacao: funcaoAtivacao }),
-            new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao })
-        ],
-        epocas: 10,
-        showLogs: true,
-        desejado: desejado
-    });
+        bp.treina();
 
-    bp.treina();
+        dados.forEach((dado, i) => {
+            let obt = bp.prediz(dado);
+            console.log(desejado[i])
+            console.log("Esperado: " + desejado[i], "Obtido: " + bp.prediz(dado).maxValue)
+        })
 
-    dados.forEach((dado, i) => {
-        let obt = bp.prediz(dado);
-        console.log("Esperado: " + desejado[i].reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0) + ", Obtido: " + obt.maxIndex)
+
     })
+
 })
+
+

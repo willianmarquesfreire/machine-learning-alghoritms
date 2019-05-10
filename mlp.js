@@ -266,7 +266,7 @@ class MLP {
             for (let i = 0; i < this.camadas[iCamada - 1].neuronios.length; i++) {
                 for (let j = 0; j < this.camadas[iCamada - 1].pesos[i].length; j++) {
                     this.camadas[iCamada - 1].neuronios[i].pesos[j].valor += this.txaprendizagem
-                        * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
+                    * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
                 }
             }
             this.atualizaPesos(iNeuronio, iCamada - 1)

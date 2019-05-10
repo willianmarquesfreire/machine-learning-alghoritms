@@ -65,7 +65,6 @@ class MLP:
                     vetor[j] += p[j] * ativacao[i]
                 except:
                     vetor[j] = 1
-                
         return [self.sigmoid(v) for v in vetor]
 
     def feedForward(self, dado):
@@ -75,15 +74,16 @@ class MLP:
 
     def calculaDelta(self, dado, desejado):
         iCamadas = self.iSaida
+        # print(self.ativacao)
         for iCamada in reversed(range(iCamadas + 1)):
             for iNeuronio in range(len(self.delta[iCamada])):
                 if iCamada == self.iSaida:
                     self.delta[iCamada][iNeuronio] = (desejado[iNeuronio] - self.ativacao[iCamada][iNeuronio]) * self.derivada(self.ativacao[iCamada][iNeuronio])
-                    # print(desejado[iNeuronio], self.ativacao[iCamada][iNeuronio])
+                    # print(self.ativacao[iCamada][iNeuronio])
                 elif iCamada > 0:
                     soma = 0
                     for iNeuronioNext, neuronioNext in enumerate(self.delta[iCamada+1]):
-                        print(neuronioNext, self.pesos[iCamada][iNeuronio][iNeuronioNext])
+                        # print(iCamada, self.pesos[iCamada][iNeuronio][iNeuronioNext], self.delta[iCamada][iNeuronioNext])
                         soma += neuronioNext * \
                             self.pesos[iCamada][iNeuronio][iNeuronioNext]
                             
@@ -108,9 +108,9 @@ class MLP:
     def treina(self):
         for epoca in range(self.epocas):
             # print("Época " + str(epoca))
-            self.zeraListaRecursiva(self.ativacao)
-            self.zeraListaRecursiva(self.delta)
             for i, dado in enumerate(self.dados):
+                # self.zeraListaRecursiva(self.ativacao)
+                # self.zeraListaRecursiva(self.delta)
                 for id, d in enumerate(dado):
                     self.ativacao[0][id] = d
                 self.feedForward(dado)
@@ -146,7 +146,7 @@ mlp = MLP(
     pesos=pesos,
     dados=dados,
     desejado=desejado,
-    epocas=2
+    epocas=2000
 )
 
 mlp.treina()
@@ -155,60 +155,60 @@ for dado in dados:
     print("--------", dado)
     print(mlp.prediz(dado))
 
-# print("---> Multiclasse")
+print("---> Multiclasse")
 
-# dados = [
-#     [0, 0, 0, 0, 1],
-#     [0, 0, 1, 1, 1],
-#     [0, 1, 0, 1, 1],
-#     [0, 1, 1, 1, 1],
-#     [1, 0, 0, 0, 1],
-#     [1, 0, 0, 0, 1],
-#     [1, 0, 0, 1, 1],
-#     [1, 1, 0, 0, 1],
-#     [1, 1, 1, 1, 1],
-#     [2, 0, 0, 1, 1],
-#     [2, 0, 1, 1, 1],
-#     [2, 0, 1, 1, 1],
-#     [2, 0, 0, 0, 1],
-#     [2, 1, 1, 1, 1],
-#     [2, 1, 0, 1, 1],
-# ]
+dados = [
+    [0, 0, 0, 0, 1],
+    [0, 0, 1, 1, 1],
+    [0, 1, 0, 1, 1],
+    [0, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 1, 1],
+    [1, 1, 0, 0, 1],
+    [1, 1, 1, 1, 1],
+    [2, 0, 0, 1, 1],
+    [2, 0, 1, 1, 1],
+    [2, 0, 1, 1, 1],
+    [2, 0, 0, 0, 1],
+    [2, 1, 1, 1, 1],
+    [2, 1, 0, 1, 1],
+]
 
-# desejado = [
-#     [1, 0, 0],
-#     [0, 1, 0],
-#     [0, 1, 0],
-#     [0, 0, 1],
-#     [0, 1, 0],
-#     [1, 0, 0],
-#     [0, 0, 1],
-#     [0, 1, 0],
-#     [0, 0, 1],
-#     [0, 1, 0],
-#     [0, 0, 1],
-#     [0, 1, 0],
-#     [1, 0, 0],
-#     [0, 1, 0],
-#     [0, 1, 0]
-# ]
+desejado = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [0, 1, 0],
+    [1, 0, 0],
+    [0, 0, 1],
+    [0, 1, 0],
+    [0, 0, 1],
+    [0, 1, 0],
+    [0, 0, 1],
+    [0, 1, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 1, 0]
+]
 
-# pesos = [
-#     [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-#     [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-#     [0, 0, 0] 
-# ]
+pesos = [
+    [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+    [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+    [0, 0, 0] 
+]
 
-# mlp = MLP(
-#     pesos=pesos,
-#     dados=dados,
-#     desejado=desejado,
-#     epocas=2000
-# )
+mlp = MLP(
+    pesos=pesos,
+    dados=dados,
+    desejado=desejado,
+    epocas=2000
+)
 
-# mlp.treina()
+mlp.treina()
 
-# for i, dado in enumerate(dados):
-#     print("--------", dado)
-#     print("Esperado: ", desejado[i])
-#     print(mlp.prediz(dado))
+for i, dado in enumerate(dados):
+    print("--------", dado)
+    print("Esperado: ", desejado[i])
+    print(mlp.prediz(dado))
