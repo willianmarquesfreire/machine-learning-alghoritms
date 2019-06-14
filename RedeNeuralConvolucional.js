@@ -1,6 +1,5 @@
 let m = require("./mlp");
 let MLP = m.MLP;
-let Neuronio = m.Neuronio;
 let FuncaoAtivacao = m.FuncaoAtivacao;
 let CamadaDensa = m.CamadaDensa;
 const fs = require('fs');

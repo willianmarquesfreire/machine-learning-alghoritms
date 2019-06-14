@@ -1,8 +1,8 @@
 let m = require("./mlp");
 let MLP = m.MLP;
 let FuncaoAtivacao = m.FuncaoAtivacao;
-let Neuronio = m.Neuronio;
 let CamadaDensa = m.CamadaDensa;
+let CamadaConvolucional = m.CamadaConvolucional;
 
 let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
 
@@ -19,15 +19,16 @@ console.log("-----------> Binário")
 
 let desejado = [0, 1, 1, 0]
 
-let entrada = new CamadaDensa({ pesos: [[-0.424, -0.740, -0.961], [0.358, -0.577, -0.469], [0.1, 0.1, 0.1]], funcaoAtivacao: funcaoAtivacao});
-let oculta = new CamadaDensa({ pesos: [[-0.017], [-0.893], [0.148]], funcaoAtivacao: funcaoAtivacao});
-let saida = new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao});
-
 let bp = new MLP({
-    camadas: [entrada, oculta, saida],
+    camadas: [
+        new CamadaConvolucional({ qtdEntrada: 3, qtdSaida: 3, funcaoAtivacao: funcaoAtivacao}),
+        new CamadaDensa({ qtdEntrada: 3, qtdSaida: 3, funcaoAtivacao: funcaoAtivacao}),
+        new CamadaDensa({ qtdEntrada: 3, qtdSaida: 1, funcaoAtivacao: funcaoAtivacao}),
+        new CamadaDensa({ pesos: [0], funcaoAtivacao: funcaoAtivacao})
+    ],
     txaprendizagem: 0.3,
     dados: dados,
-    epocas: 2000,
+    epocas: 4000,
     showLogs: false,
     desejado: desejado
 });

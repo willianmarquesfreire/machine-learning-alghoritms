@@ -114,6 +114,62 @@ class FuncaoAtivacao {
     }
 }
 
+class CamadaConvolucional {
+    constructor(attrs) {
+        this.pesos = attrs.pesos;
+        this.id = attrs.id;
+        if (!this.pesos) {
+            this.pesos = [];
+            for (let i = 0; i < attrs.qtdEntrada; i++) {
+                if (attrs.qtdSaida > 0) {
+                    let peso = [];
+                    for (let j = 0; j < attrs.qtdSaida; j++) {
+                        peso.push(1);
+                    }
+                    this.pesos.push(peso);
+                } else {
+                    this.pesos.push(0);
+                }
+            }
+        }
+        this.funcaoAtivacao = attrs.funcaoAtivacao;
+    }
+    inicializaCamada(entrada, saida) {
+        this.entrada = entrada;
+        this.saida = saida;
+        this.inicializaVetor();
+    }
+    inicializaVetor() {
+        let size = this.pesos.length;
+        for (let j = 0; j < size; j++) {
+            let neuronio = new Neuronio({
+                ativacao: 0,
+                delta: 0,
+                pesos: this.pesos[j],
+                camada: this.id,
+                id: j,
+                funcaoAtivacao: 'linear'
+            });
+            this.neuronios = this.neuronios || [];
+            if (this.saida) {
+                if (neuronio.pesos) {
+                    neuronio.pesos = neuronio.pesos.map((peso, iPeso) => {
+                        this.saida.neuronios[iPeso].parent = this.saida.neuronios[iPeso].parent || [];
+                        this.saida.neuronios[iPeso].parent.push(neuronio)
+                        return new Peso(this.saida.neuronios[iPeso], peso);
+                    })
+                }
+            }
+            this.neuronios.push(neuronio);
+        }
+    }
+    ativa(dado) {
+        for (let i = 0; i < dado.length; i++) {
+            this.neuronios[i].ativacao = dado[i];
+        }
+    }
+}
+
 class CamadaDensa {
     constructor(attrs) {
         this.pesos = attrs.pesos;
@@ -142,11 +198,12 @@ class CamadaDensa {
     inicializaVetor() {
         let size = this.pesos.length;
         for (let j = 0; j < size; j++) {
-            let neuronio = new Neuronio({
+            let neuronio = new Perceptron({
                 ativacao: 0,
                 delta: 0,
                 pesos: this.pesos[j],
                 camada: this.id,
+                isEntrada: this.isEntrada(),
                 id: j,
                 funcaoAtivacao: this.funcaoAtivacao
             });
@@ -163,17 +220,43 @@ class CamadaDensa {
             this.neuronios.push(neuronio);
         }
     }
+    isEntrada() {
+        return !this.entrada || !(this.entrada instanceof CamadaDensa)
+    }
+    ativa(dado) {
+        for (let i = 0; i < dado.length; i++) {
+            this.neuronios[i].ativacao = dado[i];
+        }
+    }
 }
 
 class Neuronio {
     constructor(attrs) {
-        this.delta = attrs.delta;
         this.ativacao = attrs.ativacao;
         this.pesos = attrs.pesos;
         this.parent = attrs.parent;
         this.funcaoAtivacao = attrs.funcaoAtivacao;
         this.camada = attrs.camada;
         this.id = attrs.id;
+        this.entrada = false;
+    }
+
+    get ativacao() {
+        return this._ativacao
+    }
+    set ativacao(_ativacao) {
+        this._ativacao = _ativacao;
+    }
+    derivada() {
+        return this.funcaoAtivacao.derivada(this._ativacao)
+    }
+}
+
+class Perceptron extends Neuronio {
+    constructor(attrs) {
+        super(attrs);
+        this.delta = attrs.delta;
+        this.isEntrada = attrs.isEntrada;
     }
     get somatorio() {
         let sum = 0;
@@ -187,6 +270,9 @@ class Neuronio {
         }
     }
     get ativacao() {
+        if (this.isEntrada && this.camada > 0) {
+            return this.parent[this.id].ativacao;
+        }
         this._ativacao = this.camada == 0 ? this._ativacao : this.funcaoAtivacao.get(this.somatorio)
         return this._ativacao
     }
@@ -223,19 +309,19 @@ class MLP {
         this.iEntrada = 0;
         this.showLogs = attrs.showLogs;
         this.camadas = attrs.camadas;
-        for (let i = this.camadas.length - 1; i >= 0; i--) {
+        for (let i = this.camadas.length - 1; i >= this.iEntrada; i--) {
             this.camadas[i].id = i;
             this.camadas[i].inicializaCamada(this.camadas[i - 1], this.camadas[i + 1])
 
         }
-        this.iSaida = this.camadas.length - 1;;
+        this.iSaida = this.camadas.length - 1;
         if (this.showLogs) console.log("Rede Inicializada")
     }
     treina() {
         for (let epoca = 0; epoca < this.epocas; epoca++) {
             if (this.showLogs) console.log("Época: " + epoca)
             for (let i = 0; i < this.dados.length; i++) {
-                this.ativacaoPrimeiraCamada(this.dados[i]);
+                this.camadas[this.iEntrada].ativa(this.dados[i]);
                 if (this.desejado[i] != this.camadas[this.iSaida].neuronios.map(at => at.ativacao)) {
                     this.desejado[i].forEach((d, iNeuronio) => this.calculaErro(d, iNeuronio, this.iSaida))
                     this.previsto[i] = this.camadas[this.iSaida].neuronios.map(saida => saida.ativacao);
@@ -265,11 +351,6 @@ class MLP {
         })
         return res;
     }
-    ativacaoPrimeiraCamada(dado) {
-        for (let i = 0; i < this.camadas[0].neuronios.length; i++) {
-            this.camadas[0].neuronios[i].ativacao = dado[i];
-        }
-    }
     max(obt) {
         return obt.reduce((iMax, x, i, arr) => x > arr[iMax] ? i : iMax, 0);
     }
@@ -284,11 +365,11 @@ class MLP {
     }
     async ajustaPeso(iCamada, i, j) {
         this.camadas[iCamada - 1].neuronios[i].pesos[j].valor += this.txaprendizagem
-        * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
+            * this.camadas[iCamada].neuronios[j].delta * this.camadas[iCamada - 1].neuronios[i].ativacao;
     }
     async atualizaPesos(iNeuronio, iCamada) {
         // console.log("Ajusta Pesos", iCamada, iNeuronio)
-        if (this.camadas[iCamada - 1]) {
+        if (this.camadas[iCamada - 1] && this.camadas[iCamada - 1] instanceof CamadaDensa) {
             this.camadas[iCamada - 1].neuronios.forEach(async (p1, i) => {
                 this.camadas[iCamada - 1].pesos[i].forEach(async (p2, j) => {
                     this.ajustaPeso(iCamada, i, j)
@@ -298,7 +379,7 @@ class MLP {
         }
     }
     prediz(dado) {
-        this.ativacaoPrimeiraCamada(dado);
+        this.camadas[this.iEntrada].ativa(dado);
         let values = this.camadas[this.iSaida].neuronios.map(at => at.ativacao);
         let maxIndex = this.max(values);
         return {
@@ -311,8 +392,9 @@ class MLP {
 
 module.exports = {
     MLP: MLP,
-    Neuronio: Neuronio,
+    Perceptron: Perceptron,
     FuncaoAtivacao: FuncaoAtivacao,
     CamadaDensa: CamadaDensa,
+    CamadaConvolucional: CamadaConvolucional,
     Peso: Peso
 }
