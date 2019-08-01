@@ -114,6 +114,75 @@ class FuncaoAtivacao {
     }
 }
 
+class Neuronio {
+    constructor(attrs) {
+        this.ativacao = attrs.ativacao;
+        this.pesos = attrs.pesos;
+        this.parent = attrs.parent;
+        this.funcaoAtivacao = attrs.funcaoAtivacao;
+        this.camada = attrs.camada;
+        this.id = attrs.id;
+        this.entrada = false;
+    }
+
+    get ativacao() {
+        return this._ativacao
+    }
+    set ativacao(_ativacao) {
+        this._ativacao = _ativacao;
+    }
+    derivada() {
+        return this.funcaoAtivacao.derivada(this._ativacao)
+    }
+}
+
+class Perceptron extends Neuronio {
+    constructor(attrs) {
+        super(attrs);
+        this.delta = attrs.delta;
+        this.isEntrada = attrs.isEntrada;
+    }
+    get somatorio() {
+        let sum = 0;
+        if (this.parent && this.parent.length > 0) {
+            this.parent.forEach(async (p) => {
+                sum += (p.pesos[this.id].valor * p.ativacao);
+            })
+            return sum;
+        } else {
+            return this._ativacao;
+        }
+    }
+    get ativacao() {
+        if (this.isEntrada && this.camada > 0) {
+            return this.parent[this.id].ativacao;
+        }
+        this._ativacao = this.camada == 0 ? this._ativacao : this.funcaoAtivacao.get(this.somatorio)
+        return this._ativacao
+    }
+    set ativacao(_ativacao) {
+        this._ativacao = _ativacao;
+    }
+    derivada() {
+        // return this.funcaoAtivacao.derivada(this.ativacao) //Tem mais acerto, mas é mais pesado
+        return this.funcaoAtivacao.derivada(this._ativacao)
+    }
+    set delta(_delta) {
+        this._delta = _delta;
+    }
+    get delta() {
+        if (this.pesos && this.pesos instanceof Array) {
+            let soma = 0;
+            this.pesos.forEach(async (peso, i) => {
+                soma += peso.valor * peso.neuronio.delta;
+            });
+            return soma * this.derivada();
+        } else {
+            return this.erro * this.derivada()
+        }
+    }
+}
+
 class CamadaConvolucional {
     constructor(attrs) {
         this.pesos = attrs.pesos;
@@ -226,75 +295,6 @@ class CamadaDensa {
     ativa(dado) {
         for (let i = 0; i < dado.length; i++) {
             this.neuronios[i].ativacao = dado[i];
-        }
-    }
-}
-
-class Neuronio {
-    constructor(attrs) {
-        this.ativacao = attrs.ativacao;
-        this.pesos = attrs.pesos;
-        this.parent = attrs.parent;
-        this.funcaoAtivacao = attrs.funcaoAtivacao;
-        this.camada = attrs.camada;
-        this.id = attrs.id;
-        this.entrada = false;
-    }
-
-    get ativacao() {
-        return this._ativacao
-    }
-    set ativacao(_ativacao) {
-        this._ativacao = _ativacao;
-    }
-    derivada() {
-        return this.funcaoAtivacao.derivada(this._ativacao)
-    }
-}
-
-class Perceptron extends Neuronio {
-    constructor(attrs) {
-        super(attrs);
-        this.delta = attrs.delta;
-        this.isEntrada = attrs.isEntrada;
-    }
-    get somatorio() {
-        let sum = 0;
-        if (this.parent && this.parent.length > 0) {
-            this.parent.forEach(async (p) => {
-                sum += (p.pesos[this.id].valor * p.ativacao);
-            })
-            return sum;
-        } else {
-            return this._ativacao;
-        }
-    }
-    get ativacao() {
-        if (this.isEntrada && this.camada > 0) {
-            return this.parent[this.id].ativacao;
-        }
-        this._ativacao = this.camada == 0 ? this._ativacao : this.funcaoAtivacao.get(this.somatorio)
-        return this._ativacao
-    }
-    set ativacao(_ativacao) {
-        this._ativacao = _ativacao;
-    }
-    derivada() {
-        // return this.funcaoAtivacao.derivada(this.ativacao) //Tem mais acerto, mas é mais pesado
-        return this.funcaoAtivacao.derivada(this._ativacao)
-    }
-    set delta(_delta) {
-        this._delta = _delta;
-    }
-    get delta() {
-        if (this.pesos && this.pesos instanceof Array) {
-            let soma = 0;
-            this.pesos.forEach(async (peso, i) => {
-                soma += peso.valor * peso.neuronio.delta;
-            });
-            return soma * this.derivada();
-        } else {
-            return this.erro * this.derivada()
         }
     }
 }

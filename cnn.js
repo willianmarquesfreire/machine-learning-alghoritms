@@ -167,7 +167,6 @@ class Imagem {
 
 }
 
-
 function treina(dados, desejado, dadosTeste, desejadoTeste) {
     let funcaoAtivacao = new FuncaoAtivacao('sigmoid');
     dados = dados.concat(dadosTeste);
